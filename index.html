@@ -1072,6 +1072,66 @@ var TF = window.TF = window.TF || {};
     play(o, t0, tEnd, [vca, dest]);
   }
 
+  /* ---- Speech scheduler --------------------------------------------------
+     Chrome's TTS engine wedges when cancel() and speak() land in the same
+     tick at smash rate: it stops producing audio until the page reloads.
+     So calls are coalesced - the newest label wins and is actually spoken a
+     short settle time after the engine was cleared - and a watchdog frees an
+     utterance that neither ends nor errors. */
+  var SPEAK_SETTLE_MS = 80;
+  var SPEAK_STUCK_MS = 3000;
+  var speakTimer = 0;
+  var speakWatchdog = 0;
+  var speakCurrent = null;
+  var speakPendingWords = '';
+
+  function speechReset() {
+    speakPendingWords = '';
+    speakCurrent = null;
+    if (speakTimer) { window.clearTimeout(speakTimer); speakTimer = 0; }
+    if (speakWatchdog) { window.clearTimeout(speakWatchdog); speakWatchdog = 0; }
+    if (synth) {
+      try { synth.cancel(); } catch (err) { ignore(); }
+      try { synth.resume(); } catch (err) { ignore(); }
+    }
+  }
+
+  function speakNow() {
+    speakTimer = 0;
+    var words = speakPendingWords;
+    speakPendingWords = '';
+    if (!synth || !words || !speechOn()) { return; }
+    try {
+      if (synth.paused) { synth.resume(); }
+      var u = new window.SpeechSynthesisUtterance(words);
+      u.rate = 0.9;
+      u.pitch = 1.25;
+      u.volume = 1;
+      u.lang = (typeof document !== 'undefined' && document.documentElement &&
+        document.documentElement.lang) || 'en-US';
+      var settle = function () {
+        if (speakCurrent === u) {
+          speakCurrent = null;
+          if (speakWatchdog) { window.clearTimeout(speakWatchdog); speakWatchdog = 0; }
+        }
+      };
+      u.onend = settle;
+      u.onerror = settle;
+      speakCurrent = u;
+      if (speakWatchdog) { window.clearTimeout(speakWatchdog); }
+      speakWatchdog = window.setTimeout(function () {
+        speakWatchdog = 0;
+        if (speakCurrent === u) {
+          speakCurrent = null;
+          try { synth.cancel(); } catch (err) { ignore(); }
+        }
+      }, SPEAK_STUCK_MS);
+      synth.speak(u);
+    } catch (err) {
+      ignore();
+    }
+  }
+
   /* ---- Public API ------------------------------------------------------- */
 
   var api = {
@@ -1135,23 +1195,20 @@ var TF = window.TF = window.TF || {};
       if (!busy()) { chime(stepFreq(0, 2), t0 + steps.length * 0.075, 0); }
     },
 
-    /* Speak one short label. Cancels anything pending so smashing can't queue. */
+    /* Speak one short label. Newest label wins; the actual utterance goes out
+       from speakNow() after the settle delay so the engine never sees
+       cancel() and speak() back to back. */
     speak: function (text) {
       if (!synth || !speechOn()) { return; }
       var words = String(text == null ? '' : text).slice(0, 60).trim();
       if (!words) { return; }
+      speakPendingWords = words;
       try {
-        synth.cancel();
-        var u = new window.SpeechSynthesisUtterance(words);
-        u.rate = 0.9;
-        u.pitch = 1.25;
-        u.volume = 1;
-        u.lang = (typeof document !== 'undefined' && document.documentElement &&
-          document.documentElement.lang) || 'en-US';
-        synth.speak(u);
+        if (synth.speaking || synth.pending) { synth.cancel(); }
       } catch (err) {
         ignore();
       }
+      if (!speakTimer) { speakTimer = window.setTimeout(speakNow, SPEAK_SETTLE_MS); }
     },
 
     /* Called by the shell after TF.settings changes. */
@@ -1165,16 +1222,20 @@ var TF = window.TF = window.TF || {};
         }
       }
       if (on) { resume(); }
-      if (synth && !speechOn()) {
-        try { synth.cancel(); } catch (err) { ignore(); }
-      }
+      /* Reset the speech engine on every toggle: turning speech back on must
+         also recover from a wedged/paused engine, not just stop gating. */
+      speechReset();
     }
   };
 
   /* iOS/Safari suspend the context when the page is hidden. */
   if (typeof document !== 'undefined' && document.addEventListener) {
     document.addEventListener('visibilitychange', function () {
-      if (!document.hidden && ctx && soundOn()) { resume(); }
+      if (document.hidden) { return; }
+      if (ctx && soundOn()) { resume(); }
+      /* Chrome can leave TTS in a paused/wedged state after the tab was
+         hidden; clear it so the next letter speaks again. */
+      if (synth && speechOn()) { speechReset(); }
     }, false);
   }
 
