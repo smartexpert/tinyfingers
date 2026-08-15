@@ -2613,7 +2613,8 @@ var TF = window.TF = window.TF || {};
     };
     engine.onKey(info);
     audio.onKey(info);
-    if (isLetter || isDigit) { audio.speak(key.toUpperCase()); }
+    /* lowercase for speech: an uppercase letter is read out as "capital K" */
+    if (isLetter || isDigit) { audio.speak(key.toLowerCase()); }
   }
 
   /* ---------------- input blocking (belt and braces) ---------------- */
