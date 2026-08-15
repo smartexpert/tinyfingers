@@ -1,0 +1,2942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="TinyFingers Deluxe - a safe, lockable keyboard-smashing playground for babies and toddlers.">
+<title>TinyFingers Deluxe</title>
+<style>
+/* ============================================================
+   TinyFingers Deluxe - stylesheet
+   1. Design tokens
+   2. Theme palettes  (body[data-theme])
+   3. Base / stage / canvas layers
+   4. Shell keyframes
+   5. HUD
+   6. Overlays (start, relock, unlock) + parent badge
+   7. Controls (buttons, toggles, keypad, theme picker)
+   8. State-driven visibility  (body[data-state])
+   9. Reduced motion
+   ============================================================ */
+
+/* ---------- 1. Design tokens ---------- */
+:root {
+  --tf-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --tf-font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", system-ui, sans-serif;
+
+  --tf-radius-sm: 12px;
+  --tf-radius: 20px;
+  --tf-radius-lg: 32px;
+  --tf-radius-pill: 999px;
+
+  --tf-space-1: 4px;
+  --tf-space-2: 8px;
+  --tf-space-3: 14px;
+  --tf-space-4: 22px;
+  --tf-space-5: 34px;
+
+  --tf-text-sm: clamp(12px, 1.6vmin, 15px);
+  --tf-text-md: clamp(15px, 2.1vmin, 19px);
+  --tf-text-lg: clamp(20px, 3.2vmin, 30px);
+  --tf-text-xl: clamp(28px, 5.4vmin, 58px);
+
+  --tf-ease-pop: cubic-bezier(0.22, 1.4, 0.36, 1);
+  --tf-ease-out: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --tf-dur-ui: 180ms;
+
+  --tf-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+  --tf-ring: 0 0 0 3px rgba(255, 255, 255, 0.85);
+
+  --tf-scrim: rgba(6, 4, 18, 0.72);
+  --tf-scrim-solid: #07040f;
+}
+
+/* ---------- 2. Theme palettes ----------
+   Every theme exposes the same contract:
+   --tf-bg-a/b/c   background gradient stops
+   --tf-p1 .. --tf-p8   bright palette (canvas particles + glyph colors)
+   --tf-accent     primary UI accent
+   --tf-ink        foreground text
+   --tf-panel / --tf-panel-2 / --tf-line   surfaces
+------------------------------------------ */
+body[data-theme="space"] {
+  --tf-bg-a: #06031a; --tf-bg-b: #1b0b3a; --tf-bg-c: #2f0b4f;
+  --tf-p1: #7cf9ff; --tf-p2: #a78bfa; --tf-p3: #f472b6; --tf-p4: #fbbf24;
+  --tf-p5: #34d399; --tf-p6: #60a5fa; --tf-p7: #fb7185; --tf-p8: #e879f9;
+  --tf-accent: #a78bfa;
+  --tf-ink: #f4f1ff;
+  --tf-panel: rgba(28, 16, 58, 0.94);
+  --tf-panel-2: rgba(255, 255, 255, 0.07);
+  --tf-line: rgba(167, 139, 250, 0.34);
+}
+body[data-theme="ocean"] {
+  --tf-bg-a: #00121f; --tf-bg-b: #003653; --tf-bg-c: #005f73;
+  --tf-p1: #7dd3fc; --tf-p2: #22d3ee; --tf-p3: #2dd4bf; --tf-p4: #a7f3d0;
+  --tf-p5: #fde68a; --tf-p6: #fb7185; --tf-p7: #c4b5fd; --tf-p8: #38bdf8;
+  --tf-accent: #22d3ee;
+  --tf-ink: #eafcff;
+  --tf-panel: rgba(3, 42, 62, 0.94);
+  --tf-panel-2: rgba(255, 255, 255, 0.08);
+  --tf-line: rgba(34, 211, 238, 0.34);
+}
+body[data-theme="garden"] {
+  --tf-bg-a: #08190d; --tf-bg-b: #14401f; --tf-bg-c: #266b32;
+  --tf-p1: #86efac; --tf-p2: #fde047; --tf-p3: #fca5a5; --tf-p4: #f9a8d4;
+  --tf-p5: #bef264; --tf-p6: #fdba74; --tf-p7: #a5f3fc; --tf-p8: #d8b4fe;
+  --tf-accent: #bef264;
+  --tf-ink: #f2ffef;
+  --tf-panel: rgba(13, 45, 22, 0.94);
+  --tf-panel-2: rgba(255, 255, 255, 0.08);
+  --tf-line: rgba(190, 242, 100, 0.32);
+}
+body[data-theme="candy"] {
+  --tf-bg-a: #24071a; --tf-bg-b: #4c0f33; --tf-bg-c: #85164c;
+  --tf-p1: #ffd1e8; --tf-p2: #ffa8d5; --tf-p3: #ffe08a; --tf-p4: #a0f0ff;
+  --tf-p5: #c3a6ff; --tf-p6: #ff9b8a; --tf-p7: #9df7c4; --tf-p8: #ffc7f0;
+  --tf-accent: #ffa8d5;
+  --tf-ink: #fff3fa;
+  --tf-panel: rgba(60, 10, 40, 0.94);
+  --tf-panel-2: rgba(255, 255, 255, 0.09);
+  --tf-line: rgba(255, 168, 213, 0.34);
+}
+
+/* ---------- 3. Base ---------- */
+* { box-sizing: border-box; }
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+body {
+  font-family: var(--tf-font);
+  color: var(--tf-ink);
+  background: var(--tf-bg-a);
+  background-image:
+    radial-gradient(120% 90% at 12% 8%, var(--tf-bg-c) 0%, transparent 58%),
+    radial-gradient(110% 85% at 88% 92%, var(--tf-bg-b) 0%, transparent 62%),
+    linear-gradient(160deg, var(--tf-bg-a) 0%, var(--tf-bg-b) 55%, var(--tf-bg-a) 100%);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color 600ms var(--tf-ease-out);
+}
+body, #stage {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+/* hide the pointer while a baby is playing, but hand it (and touch scrolling)
+   straight back when the parent keypad opens over the top of the game */
+body[data-state="playing"]:not([data-gate="open"]),
+body[data-state="relock-pending"] {
+  cursor: none;
+  touch-action: none;
+}
+/* a moving pointer means a parent is aiming for the badge: hand the cursor
+   back until the pointer has been still for a moment again */
+body[data-pointer="1"][data-state="playing"]:not([data-gate="open"]) { cursor: default; }
+body[data-state="playing"] #parent-badge { cursor: pointer; }
+
+#stage {
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+  contain: strict;
+}
+#fx-canvas,
+#glyph-layer,
+#ambient-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+/* the engine owns what goes in these layers; the shell owns their stacking */
+#ambient-layer { z-index: 1; font-family: var(--tf-font-emoji); }
+#fx-canvas     { z-index: 2; display: block; }
+#glyph-layer   { z-index: 3; }
+
+/* ---------- 4. Shell keyframes ----------
+   Glyphs, ambient drifters and the combo flash are animated by TF.engine
+   itself (inline styles, rAF and the Web Animations API), so the stylesheet
+   only carries the animations the shell chrome uses.            */
+@keyframes tf-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
+}
+@keyframes tf-rise {
+  0%   { transform: translateY(18px) scale(0.96); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes tf-breathe {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1; }
+}
+
+/* ---------- 5. HUD ---------- */
+#hud {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--tf-space-2);
+  pointer-events: none;
+  padding: var(--tf-space-2) var(--tf-space-4);
+  border-radius: var(--tf-radius-pill);
+  background: rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+#hud-count {
+  font-size: var(--tf-text-lg);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: var(--tf-ink);
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+  font-variant-numeric: tabular-nums;
+}
+#hud-count .hud-label {
+  font-size: 0.5em;
+  font-weight: 700;
+  opacity: 0.7;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-left: 0.5em;
+}
+#combo-meter {
+  width: min(46vw, 340px);
+  height: 10px;
+  border-radius: var(--tf-radius-pill);
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+#combo-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: var(--tf-radius-pill);
+  background: linear-gradient(90deg, var(--tf-p1), var(--tf-p3), var(--tf-p4));
+  transition: width 180ms var(--tf-ease-out);
+}
+#combo-label {
+  font-size: var(--tf-text-sm);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.78;
+}
+
+/* ---------- 6. Overlays ---------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.panel {
+  width: min(760px, 96vw);
+  padding: clamp(20px, 3.6vmin, 40px);
+  border-radius: var(--tf-radius-lg);
+  background: var(--tf-panel);
+  border: 1px solid var(--tf-line);
+  box-shadow: var(--tf-shadow);
+  animation: tf-rise 320ms var(--tf-ease-pop) both;
+}
+.panel h1 {
+  margin: 0 0 var(--tf-space-2);
+  font-size: var(--tf-text-xl);
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+}
+.panel h2 {
+  margin: 0 0 var(--tf-space-2);
+  font-size: var(--tf-text-lg);
+  font-weight: 900;
+}
+.panel p { margin: 0 0 var(--tf-space-3); font-size: var(--tf-text-md); line-height: 1.5; opacity: 0.92; }
+.tagline { font-size: var(--tf-text-md); opacity: 0.8; }
+.section { margin-top: var(--tf-space-4); }
+.section-title {
+  font-size: var(--tf-text-sm);
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.62;
+  margin-bottom: var(--tf-space-2);
+}
+.notice {
+  margin: 0;
+  padding: var(--tf-space-3);
+  border-radius: var(--tf-radius);
+  background: var(--tf-panel-2);
+  border: 1px solid var(--tf-line);
+  font-size: var(--tf-text-sm);
+  line-height: 1.55;
+}
+.notice ul { margin: var(--tf-space-2) 0 0; padding-left: 1.15em; }
+.notice li { margin-bottom: var(--tf-space-1); }
+.notice b { color: var(--tf-accent); }
+
+/* Panels that can outgrow a short viewport are centred with auto margins
+   instead of align-items, so overflow stays reachable by scrolling. */
+#start, #unlock { align-items: flex-start; }
+#start > .panel, #unlock > .panel { margin: auto; }
+
+/* start screen */
+#start { background: linear-gradient(160deg, var(--tf-bg-a) 0%, var(--tf-bg-b) 60%, var(--tf-bg-a) 100%); }
+#start .panel { text-align: left; }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--tf-space-3);
+  margin-bottom: var(--tf-space-3);
+}
+.brand-mark {
+  font-family: var(--tf-font-emoji);
+  font-size: clamp(34px, 7vmin, 64px);
+  line-height: 1;
+  animation: tf-pulse 3.2s var(--tf-ease-out) infinite;
+}
+
+/* relock overlay - fully opaque, covers everything */
+#relock {
+  background: var(--tf-scrim-solid);
+  background-image: linear-gradient(160deg, var(--tf-bg-b) 0%, var(--tf-bg-a) 70%);
+  z-index: 70;
+  flex-direction: column;
+  gap: var(--tf-space-4);
+  text-align: center;
+}
+#relock .relock-mark {
+  font-family: var(--tf-font-emoji);
+  font-size: clamp(60px, 16vmin, 150px);
+  line-height: 1;
+  animation: tf-pulse 1.6s var(--tf-ease-out) infinite;
+}
+#relock .relock-title {
+  font-size: var(--tf-text-xl);
+  font-weight: 900;
+  margin: 0;
+}
+#relock .relock-hint {
+  font-size: var(--tf-text-md);
+  opacity: 0.82;
+  margin: 0;
+  animation: tf-breathe 2s var(--tf-ease-out) infinite;
+}
+#relock .relock-parent {
+  font-size: var(--tf-text-sm);
+  opacity: 0.55;
+  margin: 0;
+}
+
+/* unlock overlay */
+#unlock { background: var(--tf-scrim); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 80; }
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--tf-space-3);
+}
+.stat {
+  padding: var(--tf-space-3);
+  border-radius: var(--tf-radius);
+  background: var(--tf-panel-2);
+  border: 1px solid var(--tf-line);
+}
+.stat-value {
+  font-size: var(--tf-text-lg);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: var(--tf-accent);
+  line-height: 1.1;
+}
+.stat-label {
+  margin-top: var(--tf-space-1);
+  font-size: var(--tf-text-sm);
+  opacity: 0.68;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.chaos {
+  margin-top: var(--tf-space-3);
+  padding: var(--tf-space-3) var(--tf-space-4);
+  border-radius: var(--tf-radius);
+  background: linear-gradient(100deg, var(--tf-panel-2), transparent);
+  border: 1px solid var(--tf-line);
+  font-size: var(--tf-text-md);
+  font-weight: 800;
+}
+.chaos span { color: var(--tf-accent); }
+
+/* parent badge */
+#parent-badge {
+  position: fixed;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 60;
+  display: none;
+  align-items: center;
+  gap: var(--tf-space-2);
+  padding: var(--tf-space-2) var(--tf-space-3);
+  border-radius: var(--tf-radius-pill);
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid var(--tf-line);
+  color: var(--tf-ink);
+  font-size: var(--tf-text-sm);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  opacity: 0.35;
+  transform: scale(0.92);
+  transform-origin: 100% 100%;
+  transition: opacity var(--tf-dur-ui) var(--tf-ease-out), transform var(--tf-dur-ui) var(--tf-ease-pop);
+  touch-action: none;
+  max-width: calc(100vw - 28px);
+}
+/* the code is the one thing a parent must read: never let it wrap or shrink */
+#parent-badge #badge-code { white-space: nowrap; flex: none; }
+@media (max-width: 520px) {
+  #parent-badge .badge-word { display: none; }
+}
+@media (pointer: coarse) {
+  #parent-badge { opacity: 0.6; font-size: var(--tf-text-md); }
+}
+#parent-badge:hover,
+#parent-badge.is-near,
+#parent-badge.is-reveal,
+#parent-badge.is-holding { opacity: 1; transform: scale(1.06); }
+#parent-badge .badge-emoji { font-family: var(--tf-font-emoji); font-size: 1.25em; }
+#badge-code {
+  font-weight: 900;
+  font-size: 1.15em;
+  letter-spacing: 0.34em;
+  color: var(--tf-accent);
+  font-variant-numeric: tabular-nums;
+  padding-left: 0.15em;
+}
+.badge-ring { width: 26px; height: 26px; flex: none; transform: rotate(-90deg); }
+.badge-ring circle { fill: none; stroke-width: 4; stroke-linecap: round; }
+.badge-ring-track { stroke: rgba(255, 255, 255, 0.18); }
+.badge-ring-fill {
+  stroke: var(--tf-accent);
+  stroke-dasharray: 107;
+  stroke-dashoffset: 107;
+  transition: stroke-dashoffset 120ms linear;
+}
+#parent-badge.is-holding .badge-ring-fill {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 2000ms linear;
+}
+
+/* ---------- 7. Controls ---------- */
+.btn {
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  font-size: var(--tf-text-md);
+  font-weight: 800;
+  color: var(--tf-ink);
+  background: var(--tf-panel-2);
+  border: 1px solid var(--tf-line);
+  border-radius: var(--tf-radius-pill);
+  padding: var(--tf-space-3) var(--tf-space-4);
+  cursor: pointer;
+  transition: transform var(--tf-dur-ui) var(--tf-ease-pop), background var(--tf-dur-ui) var(--tf-ease-out), opacity var(--tf-dur-ui);
+  touch-action: manipulation;
+}
+.btn:hover { background: rgba(255, 255, 255, 0.15); }
+.btn:active { transform: scale(0.96); }
+.btn:focus-visible { outline: none; box-shadow: var(--tf-ring); }
+.btn--primary {
+  background: linear-gradient(100deg, var(--tf-p2), var(--tf-p3));
+  color: #10061f;
+  border-color: transparent;
+  font-size: var(--tf-text-lg);
+  font-weight: 900;
+  padding: var(--tf-space-4) var(--tf-space-5);
+  width: 100%;
+  margin-top: var(--tf-space-4);
+}
+.btn--ghost { background: transparent; }
+.btn[aria-pressed="true"] {
+  background: linear-gradient(100deg, var(--tf-p1), var(--tf-p2));
+  color: #10061f;
+  border-color: transparent;
+}
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tf-space-3);
+  margin-top: var(--tf-space-4);
+}
+.btn-row .btn { flex: 1 1 180px; }
+.toggle-row { display: flex; flex-wrap: wrap; gap: var(--tf-space-2); }
+.toggle-row .btn { flex: 1 1 auto; font-size: var(--tf-text-sm); padding: var(--tf-space-2) var(--tf-space-3); }
+
+/* keypad */
+#keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--tf-space-2);
+  max-width: 320px;
+  margin: var(--tf-space-3) auto 0;
+}
+#keypad .key {
+  font-size: var(--tf-text-lg);
+  font-weight: 900;
+  padding: var(--tf-space-3);
+  border-radius: var(--tf-radius);
+  font-variant-numeric: tabular-nums;
+}
+#keypad .key--zero { grid-column: 2 / 3; }
+.gate-dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--tf-space-2);
+  margin-top: var(--tf-space-3);
+}
+.gate-dots i {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--tf-line);
+  transition: background var(--tf-dur-ui) var(--tf-ease-out), transform var(--tf-dur-ui) var(--tf-ease-pop);
+}
+.gate-dots i.on { background: var(--tf-accent); transform: scale(1.2); }
+.code-echo {
+  text-align: center;
+  font-size: var(--tf-text-lg);
+  font-weight: 900;
+  letter-spacing: 0.42em;
+  color: var(--tf-accent);
+  font-variant-numeric: tabular-nums;
+  margin-top: var(--tf-space-2);
+}
+.center { text-align: center; }
+.muted { opacity: 0.65; font-size: var(--tf-text-sm); }
+
+/* ---------- 8. State-driven visibility ---------- */
+body[data-state="idle"]           #start        { display: flex; }
+body[data-state="relock-pending"] #relock       { display: flex; }
+body[data-state="playing"]        #parent-badge { display: flex; }
+body[data-state="unlocked"]       #unlock       { display: flex; }
+body[data-gate="open"]            #unlock       { display: flex; }
+body[data-state="playing"]        #hud          { display: flex; }
+body[data-state="unlocked"]       #hud          { display: flex; opacity: 0.25; }
+body[data-state="idle"]           #stage        { opacity: 0; }
+
+#unlock .panel-unlocked { display: none; }
+#unlock .panel-gate     { display: none; }
+body[data-state="unlocked"] #unlock .panel-unlocked { display: block; }
+body[data-gate="open"]:not([data-state="unlocked"]) #unlock .panel-gate { display: block; }
+
+/* ---------- 9. Reduced motion ----------
+   The engine reads settings.reducedMotion directly for glyphs, particles and
+   ambient drift; these rules calm the shell chrome to match.       */
+body[data-reduced="1"] .brand-mark,
+body[data-reduced="1"] #relock .relock-mark,
+body[data-reduced="1"] #relock .relock-hint { animation: none; }
+body[data-reduced="1"] .panel { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .panel, .brand-mark, #relock .relock-mark, #relock .relock-hint { animation: none; }
+}
+</style>
+</head>
+<body data-state="idle" data-theme="space" data-reduced="0">
+
+<!-- play area -->
+<main id="stage" aria-hidden="true">
+  <div id="ambient-layer"></div>
+  <canvas id="fx-canvas"></canvas>
+  <div id="glyph-layer"></div>
+</main>
+
+<!-- heads-up display -->
+<div id="hud" aria-hidden="true">
+  <div id="hud-count"><span id="hud-total">0</span><span class="hud-label">keys smashed</span></div>
+  <div id="combo-meter"><div id="combo-fill"></div></div>
+  <div id="combo-label">combo <span id="combo-value">0</span></div>
+</div>
+
+<!-- start screen -->
+<section id="start" class="overlay" aria-label="Start screen">
+  <div class="panel">
+    <div class="brand">
+      <div class="brand-mark">🐣</div>
+      <div>
+        <h1>TinyFingers Deluxe</h1>
+        <div class="tagline">A safe keyboard playground for very small humans.</div>
+      </div>
+    </div>
+
+    <p>Hand the keyboard over. Every key makes a colour, a shape and a friendly note. Nothing gets deleted, nothing gets sent anywhere, and your little one cannot wander off into the rest of the computer.</p>
+
+    <div class="section">
+      <div class="section-title">Before you start</div>
+      <div class="notice">
+        <div id="cap-note">Checking what this browser can lock down&hellip;</div>
+        <ul>
+          <li>Play goes fullscreen and swallows keyboard shortcuts. If fullscreen is lost, an overlay appears and the <b>next key or tap re-locks it</b> automatically.</li>
+          <li>Nothing on the web can block <b>Ctrl+Alt+Del</b>, and on some systems <b>Alt+F4</b> or the power button still work. For absolute lockdown, pair this with your operating system's kiosk or guided-access mode.</li>
+          <li>To get out, a grown-up types the 4-digit code shown in the corner &mdash; or presses and holds that badge for 2 seconds.</li>
+        </ul>
+      </div>
+    </div>
+
+    <button id="start-btn" class="btn btn--primary" type="button">Start playing 🔒</button>
+    <p class="muted center" style="margin-top:14px">Works offline. No accounts, no uploads, no ads.</p>
+  </div>
+</section>
+
+<!-- auto-relock overlay -->
+<section id="relock" class="overlay" aria-label="Locked - press any key to continue">
+  <div class="relock-mark">🔒</div>
+  <p class="relock-title">Keep smashing to play!</p>
+  <p class="relock-hint">Press any key or tap the screen 👆</p>
+  <p class="relock-parent">Parents: after it re-locks, type the code in the corner to unlock.</p>
+</section>
+
+<!-- parent badge -->
+<div id="parent-badge" role="button" tabindex="-1" aria-label="Parents: type the code to unlock, or press and hold for the keypad">
+  <svg class="badge-ring" viewBox="0 0 40 40" aria-hidden="true">
+    <circle class="badge-ring-track" cx="20" cy="20" r="17"></circle>
+    <circle class="badge-ring-fill" cx="20" cy="20" r="17"></circle>
+  </svg>
+  <span class="badge-emoji">👨‍👩‍👧</span>
+  <span class="badge-word">Parents: type</span>
+  <span id="badge-code">0 0 0 0</span>
+  <span class="badge-word">to unlock</span>
+</div>
+
+<!-- unlock overlay: keypad gate + smash report + settings -->
+<section id="unlock" class="overlay" aria-label="Parent panel">
+  <div class="panel">
+
+    <!-- shown while still playing, opened by press-and-hold -->
+    <div class="panel-gate">
+      <h2 class="center">Parent unlock 🔑</h2>
+      <p class="center muted">Tap these four digits:</p>
+      <div class="code-echo" id="keypad-code">0 0 0 0</div>
+      <div class="gate-dots" id="gate-dots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div id="keypad">
+        <button class="btn key" type="button" data-digit="1">1</button>
+        <button class="btn key" type="button" data-digit="2">2</button>
+        <button class="btn key" type="button" data-digit="3">3</button>
+        <button class="btn key" type="button" data-digit="4">4</button>
+        <button class="btn key" type="button" data-digit="5">5</button>
+        <button class="btn key" type="button" data-digit="6">6</button>
+        <button class="btn key" type="button" data-digit="7">7</button>
+        <button class="btn key" type="button" data-digit="8">8</button>
+        <button class="btn key" type="button" data-digit="9">9</button>
+        <button class="btn key key--zero" type="button" data-digit="0">0</button>
+      </div>
+      <div class="btn-row">
+        <button id="gate-cancel" class="btn btn--ghost" type="button">Back to play</button>
+      </div>
+    </div>
+
+    <!-- shown once unlocked -->
+    <div class="panel-unlocked">
+      <h2>Smash Report 📊</h2>
+      <div class="report-grid">
+        <div class="stat"><div class="stat-value" id="rep-total">0</div><div class="stat-label">keys smashed</div></div>
+        <div class="stat"><div class="stat-value" id="rep-minutes">0</div><div class="stat-label">minutes played</div></div>
+        <div class="stat"><div class="stat-value" id="rep-unique">0</div><div class="stat-label">different keys</div></div>
+        <div class="stat"><div class="stat-value" id="rep-combo">0</div><div class="stat-label">best combo</div></div>
+      </div>
+      <div class="stat" style="margin-top:14px">
+        <div class="stat-value" id="rep-fav">&mdash;</div>
+        <div class="stat-label">favourite keys</div>
+      </div>
+      <div class="chaos">Chaos level: <span id="rep-chaos">Gentle Tapper 🐣</span></div>
+
+      <div class="section">
+        <div class="section-title">Settings</div>
+        <div class="toggle-row">
+          <button class="btn" type="button" id="set-sound" aria-pressed="true">🔊 Sound</button>
+          <button class="btn" type="button" id="set-speech" aria-pressed="true">🗣️ Voice</button>
+          <button class="btn" type="button" id="set-motion" aria-pressed="false">🌙 Calm mode</button>
+        </div>
+        <div class="toggle-row" style="margin-top:8px" id="theme-picker">
+          <button class="btn" type="button" data-theme="space" aria-pressed="true">🚀 Space</button>
+          <button class="btn" type="button" data-theme="ocean" aria-pressed="false">🐟 Ocean</button>
+          <button class="btn" type="button" data-theme="garden" aria-pressed="false">🌻 Garden</button>
+          <button class="btn" type="button" data-theme="candy" aria-pressed="false">🍭 Candy</button>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button id="resume-btn" class="btn btn--primary" style="margin-top:0" type="button">Resume play 🔒</button>
+        <button id="exit-btn" class="btn btn--ghost" type="button">Exit to start</button>
+      </div>
+      <p class="muted center" style="margin-top:12px">The screen stays locked while you read this, so the keyboard is still safe.</p>
+    </div>
+
+  </div>
+</section>
+
+<script>
+/* ============================================================
+   TinyFingers Deluxe - one script tag, three modules in load
+   order: TF.audio, TF.engine, then the shell that wires them
+   together. window.TF is the only global this file creates.
+   ============================================================ */
+'use strict';
+var TF = window.TF = window.TF || {};
+
+/* ==========================================================================
+   TF.audio — WebAudio synthesis + speechSynthesis. No assets, no network.
+   Public API: init() · onKey(info) · onPointer(x01, y01) · speak(text)
+               celebrate() · applySettings()
+   ========================================================================== */
+(function () {
+  'use strict';
+
+  /* ---- Feature detection ------------------------------------------------ */
+
+  var Ctor = (typeof window !== 'undefined' &&
+    (window.AudioContext || window.webkitAudioContext)) || null;
+
+  var synth = null;
+  try {
+    synth = (typeof window !== 'undefined' && window.speechSynthesis) || null;
+  } catch (err) {
+    synth = null;
+  }
+
+  /* ---- Tuning ----------------------------------------------------------- */
+
+  var MASTER_GAIN = 0.5;
+  var ROOT = 261.626;            // C4
+  var PENTATONIC = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24]; // ~2 octaves, C major pentatonic
+  var SCALE_LEN = PENTATONIC.length;
+  var MAX_VOICES = 48;           // hard polyphony cap: smashing can't pile up
+  var ATTACK = 0.005;
+
+  /* ---- Module state ----------------------------------------------------- */
+
+  var ctx = null;
+  var master = null;             // GainNode  (~0.5)
+  var limiter = null;            // DynamicsCompressorNode
+  var noiseBuf = null;
+  var voices = 0;
+  var broken = false;            // AudioContext construction failed; stop retrying
+  var freqCache = [];
+
+  for (var i = 0; i < SCALE_LEN; i++) {
+    freqCache.push(ROOT * Math.pow(2, PENTATONIC[i] / 12));
+  }
+
+  /* ---- Settings helpers ------------------------------------------------- */
+
+  function settings() {
+    var s = null;
+    try {
+      s = (typeof TF !== 'undefined' && TF && TF.settings) || null;
+    } catch (err) {
+      s = null;
+    }
+    return s;
+  }
+
+  function soundOn() {
+    var s = settings();
+    return !s || s.sound !== false;
+  }
+
+  function speechOn() {
+    var s = settings();
+    return (!s || s.speech !== false) && soundOn();
+  }
+
+  /* ---- Graph ------------------------------------------------------------ */
+
+  function build() {
+    if (ctx || broken || !Ctor) { return ctx; }
+    try {
+      ctx = new Ctor();
+    } catch (err) {
+      ctx = null;
+      broken = true;
+      return null;
+    }
+    try {
+      master = ctx.createGain();
+      master.gain.value = soundOn() ? MASTER_GAIN : 0;
+
+      limiter = ctx.createDynamicsCompressor();
+      set(limiter.threshold, -10);
+      set(limiter.knee, 6);
+      set(limiter.ratio, 12);
+      set(limiter.attack, 0.003);
+      set(limiter.release, 0.25);
+
+      master.connect(limiter);
+      limiter.connect(ctx.destination);
+    } catch (err) {
+      ctx = null;
+      master = null;
+      limiter = null;
+      broken = true;
+    }
+    return ctx;
+  }
+
+  function set(param, value) {
+    if (param && typeof param.value === 'number') { param.value = value; }
+  }
+
+  function resume() {
+    if (!ctx) { return; }
+    try {
+      if (ctx.state === 'suspended' && typeof ctx.resume === 'function') {
+        var p = ctx.resume();
+        if (p && typeof p.catch === 'function') { p.catch(ignore); }
+      }
+    } catch (err) {
+      ignore();
+    }
+  }
+
+  function ignore() { return undefined; }
+
+  /* Ready-to-play context, or null when audio is unavailable / muted. */
+  function live() {
+    if (!soundOn()) { return null; }
+    if (!ctx) { build(); }
+    if (!ctx || !master) { return null; }
+    if (ctx.state === 'suspended') { resume(); }
+    if (ctx.state === 'closed') { return null; }
+    return ctx;
+  }
+
+  function now() { return ctx.currentTime + 0.001; }
+
+  function noise() {
+    if (noiseBuf || !ctx) { return noiseBuf; }
+    try {
+      var len = Math.floor(ctx.sampleRate * 0.25);
+      noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+      var data = noiseBuf.getChannelData(0);
+      for (var n = 0; n < len; n++) { data[n] = Math.random() * 2 - 1; }
+    } catch (err) {
+      noiseBuf = null;
+    }
+    return noiseBuf;
+  }
+
+  /* ---- Voice plumbing --------------------------------------------------- */
+
+  /* Short exponential pluck envelope. Peak is reached in ~5ms, then decays. */
+  function envelope(gain, t0, peak, attack, decay) {
+    var g = gain.gain;
+    var top = Math.max(peak, 0.0005);
+    g.setValueAtTime(0.0001, t0);
+    g.exponentialRampToValueAtTime(top, t0 + attack);
+    g.exponentialRampToValueAtTime(0.0001, t0 + attack + decay);
+    g.setValueAtTime(0, t0 + attack + decay);
+    return t0 + attack + decay + 0.02;
+  }
+
+  /* Starts an oscillator and disposes the whole voice chain when it ends. */
+  function play(osc, t0, tEnd, chain) {
+    voices++;
+    osc.onended = function () {
+      voices--;
+      drop(osc);
+      if (chain) {
+        for (var k = 0; k < chain.length; k++) { drop(chain[k]); }
+      }
+    };
+    try {
+      osc.start(t0);
+      osc.stop(tEnd);
+    } catch (err) {
+      osc.onended = null;
+      voices--;
+      drop(osc);
+    }
+  }
+
+  function drop(node) {
+    if (!node || node === master) { return; }
+    try { node.disconnect(); } catch (err) { ignore(); }
+  }
+
+  function osc(type, freq, t0) {
+    var o = ctx.createOscillator();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+    return o;
+  }
+
+  function gain(value) {
+    var g = ctx.createGain();
+    g.gain.value = value;
+    return g;
+  }
+
+  function busy() { return voices >= MAX_VOICES; }
+
+  /* Output stage for one note: optional stereo placement, then master. */
+  function out(pan) {
+    if (typeof pan === 'number' && ctx.createStereoPanner) {
+      try {
+        var p = ctx.createStereoPanner();
+        p.pan.value = Math.max(-1, Math.min(1, pan));
+        p.connect(master);
+        return p;
+      } catch (err) {
+        ignore();
+      }
+    }
+    return master;
+  }
+
+  /* ---- Pitch mapping ---------------------------------------------------- */
+
+  function stepFreq(step, octaves) {
+    var s = ((step % SCALE_LEN) + SCALE_LEN) % SCALE_LEN;
+    return freqCache[s] * Math.pow(2, octaves || 0);
+  }
+
+  function hash(text) {
+    var h = 0;
+    var str = String(text || '');
+    for (var c = 0; c < str.length; c++) {
+      h = (h * 31 + str.charCodeAt(c)) % 100003;
+    }
+    return h;
+  }
+
+  /* Same key -> same note, always. Letters walk the pentatonic scale. */
+  function letterStep(key) {
+    var code = String(key || 'a').toUpperCase().charCodeAt(0);
+    var idx = code - 65;
+    if (!(idx >= 0)) { idx = 0; }
+    return idx % SCALE_LEN;
+  }
+
+  /* comboLevel is the shell's rolling 5-second press count, so the lift ramps
+     in across a burst of smashing instead of maxing out on the second tap. */
+  function comboLift(level) {
+    var n = typeof level === 'number' && level > 0 ? level : 0;
+    return Math.min(n, 30) / 30;   // 0 .. 1
+  }
+
+  /* ---- Timbres ---------------------------------------------------------- */
+
+  /* Letters: warm pluck — triangle body, soft octave shimmer, closing filter. */
+  function pluck(freq, t0, level, pan) {
+    var lift = comboLift(level);
+    var decay = 0.42;
+    var dest = out(pan);
+    var vca = gain(0);
+    var lpf = ctx.createBiquadFilter();
+    lpf.type = 'lowpass';
+    lpf.Q.value = 0.8;
+    lpf.frequency.setValueAtTime(Math.min(freq * (6 + lift * 6), 16000), t0);
+    lpf.frequency.exponentialRampToValueAtTime(Math.max(freq * 1.6, 120), t0 + decay);
+
+    var body = osc('triangle', freq, t0);
+    var shimmer = osc('sine', freq * 2, t0);
+    var shimmerGain = gain(0.3 + lift * 0.15);
+
+    body.connect(lpf);
+    shimmer.connect(shimmerGain);
+    shimmerGain.connect(lpf);
+    lpf.connect(vca);
+    vca.connect(dest);
+
+    var tEnd = envelope(vca, t0, 0.3 + lift * 0.08, ATTACK, decay);
+    play(shimmer, t0, tEnd, [shimmerGain]);
+    play(body, t0, tEnd, [lpf, vca, dest]);
+
+    if (lift >= 0.3) { fifth(freq, t0, decay * 0.8, pan); }
+  }
+
+  /* Gentle fifth above, only at high combo levels. */
+  function fifth(freq, t0, decay, pan) {
+    if (busy()) { return; }
+    var dest = out(pan);
+    var vca = gain(0);
+    var o = osc('sine', freq * 1.4983, t0);
+    o.connect(vca);
+    vca.connect(dest);
+    var tEnd = envelope(vca, t0, 0.09, ATTACK, decay);
+    play(o, t0, tEnd, [vca, dest]);
+  }
+
+  /* Digits: marimba — sine fundamental plus a fast 4th-partial mallet knock. */
+  function marimba(freq, t0, level, pan) {
+    var lift = comboLift(level);
+    var dest = out(pan);
+    var vca = gain(0);
+    var body = osc('sine', freq, t0);
+    body.connect(vca);
+    vca.connect(dest);
+    var tEnd = envelope(vca, t0, 0.32 + lift * 0.06, 0.004, 0.34);
+
+    var knockGain = gain(0);
+    var knock = osc('sine', freq * 3.98, t0);
+    knock.connect(knockGain);
+    knockGain.connect(dest);
+    envelope(knockGain, t0, 0.11, 0.002, 0.08);
+
+    play(knock, t0, t0 + 0.12, [knockGain]);
+    play(body, t0, tEnd, [vca, dest]);
+  }
+
+  /* Space: soft kick/thump — pitch-swept sine with a muffled noise tap. */
+  function thump(t0) {
+    var vca = gain(0);
+    var o = osc('sine', 148, t0);
+    o.frequency.exponentialRampToValueAtTime(46, t0 + 0.16);
+    o.connect(vca);
+    vca.connect(master);
+    var tEnd = envelope(vca, t0, 0.5, 0.004, 0.3);
+    play(o, t0, tEnd, [vca]);
+
+    var buf = noise();
+    if (!buf || busy()) { return; }
+    try {
+      var src = ctx.createBufferSource();
+      src.buffer = buf;
+      var lpf = ctx.createBiquadFilter();
+      lpf.type = 'lowpass';
+      lpf.frequency.value = 820;
+      var tap = gain(0);
+      src.connect(lpf);
+      lpf.connect(tap);
+      tap.connect(master);
+      envelope(tap, t0, 0.08, 0.002, 0.05);
+      play(src, t0, t0 + 0.09, [lpf, tap]);
+    } catch (err) {
+      ignore();
+    }
+  }
+
+  /* Everything else: sparkle blip — tiny high triangle with an upward flick. */
+  function sparkle(freq, t0, pan) {
+    var dest = out(pan);
+    var vca = gain(0);
+    var hpf = ctx.createBiquadFilter();
+    hpf.type = 'highpass';
+    hpf.frequency.value = 700;
+
+    var o = osc('triangle', freq, t0);
+    o.frequency.exponentialRampToValueAtTime(freq * 1.5, t0 + 0.05);
+    var glint = osc('sine', freq * 2.5, t0);
+    var glintGain = gain(0.22);
+
+    o.connect(hpf);
+    glint.connect(glintGain);
+    glintGain.connect(hpf);
+    hpf.connect(vca);
+    vca.connect(dest);
+
+    var tEnd = envelope(vca, t0, 0.2, 0.004, 0.16);
+    play(glint, t0, tEnd, [glintGain]);
+    play(o, t0, tEnd, [hpf, vca, dest]);
+  }
+
+  /* Pointer: bell-ish chime, quieter and longer than a key note. */
+  function chime(freq, t0, pan) {
+    var dest = out(pan);
+    var vca = gain(0);
+    var o = osc('sine', freq, t0);
+    var partial = osc('sine', freq * 3.01, t0);
+    var partialGain = gain(0.16);
+
+    o.connect(vca);
+    partial.connect(partialGain);
+    partialGain.connect(vca);
+    vca.connect(dest);
+
+    var tEnd = envelope(vca, t0, 0.16, 0.004, 0.5);
+    play(partial, t0, tEnd, [partialGain]);
+    play(o, t0, tEnd, [vca, dest]);
+  }
+
+  /* ---- Public API ------------------------------------------------------- */
+
+  var api = {
+
+    /* Lazily create/resume the context. Safe to call on every gesture. */
+    init: function () {
+      if (!Ctor || broken) { return; }
+      build();
+      resume();
+      if (master) { master.gain.value = soundOn() ? MASTER_GAIN : 0; }
+    },
+
+    /* info = {key, code, isLetter, isDigit, comboLevel} */
+    onKey: function (info) {
+      if (!live() || busy()) { return; }
+      var data = info || {};
+      var key = typeof data.key === 'string' ? data.key : '';
+      var code = typeof data.code === 'string' ? data.code : '';
+      var level = data.comboLevel;
+      var t0 = now();
+      var pan = ((hash(code || key) % 21) - 10) / 25;   // ±0.4, stable per key
+
+      if (data.isLetter) {
+        pluck(stepFreq(letterStep(key), 0), t0, level, pan);
+        return;
+      }
+      if (data.isDigit) {
+        var digit = parseInt(key, 10);
+        if (!(digit >= 0 && digit <= 9)) { digit = hash(key) % 10; }
+        marimba(stepFreq(digit, 1), t0, level, pan);
+        return;
+      }
+      /* Space and Enter share the visual engine's big confetti moment, so they
+         share the big drum sound too. */
+      if (key === ' ' || code === 'Space' || key === 'Enter' ||
+          code === 'Enter' || code === 'NumpadEnter') {
+        thump(t0);
+        return;
+      }
+      sparkle(stepFreq(hash(code || key), 1), t0, pan);
+    },
+
+    /* x01, y01 in 0..1 from the top-left of the viewport. */
+    onPointer: function (x01, y01) {
+      if (!live() || busy()) { return; }
+      var y = typeof y01 === 'number' && isFinite(y01) ? Math.max(0, Math.min(1, y01)) : 0.5;
+      var x = typeof x01 === 'number' && isFinite(x01) ? Math.max(0, Math.min(1, x01)) : 0.5;
+      var step = Math.round((1 - y) * (SCALE_LEN - 1));   // top of screen = high note
+      chime(stepFreq(step, 1), now(), (x - 0.5) * 1.2);
+    },
+
+    /* Short rising arpeggio for combo milestones. */
+    celebrate: function () {
+      if (!live()) { return; }
+      var t0 = now();
+      var steps = [0, 2, 4, 6, 8, 10];
+      for (var n = 0; n < steps.length; n++) {
+        if (busy()) { break; }
+        chime(stepFreq(steps[n], 1), t0 + n * 0.075, 0);
+      }
+      if (!busy()) { chime(stepFreq(0, 2), t0 + steps.length * 0.075, 0); }
+    },
+
+    /* Speak one short label. Cancels anything pending so smashing can't queue. */
+    speak: function (text) {
+      if (!synth || !speechOn()) { return; }
+      var words = String(text == null ? '' : text).slice(0, 60).trim();
+      if (!words) { return; }
+      try {
+        synth.cancel();
+        var u = new window.SpeechSynthesisUtterance(words);
+        u.rate = 0.9;
+        u.pitch = 1.25;
+        u.volume = 1;
+        u.lang = (typeof document !== 'undefined' && document.documentElement &&
+          document.documentElement.lang) || 'en-US';
+        synth.speak(u);
+      } catch (err) {
+        ignore();
+      }
+    },
+
+    /* Called by the shell after TF.settings changes. */
+    applySettings: function () {
+      var on = soundOn();
+      if (master && ctx) {
+        try {
+          master.gain.setTargetAtTime(on ? MASTER_GAIN : 0, ctx.currentTime, 0.02);
+        } catch (err) {
+          master.gain.value = on ? MASTER_GAIN : 0;
+        }
+      }
+      if (on) { resume(); }
+      if (synth && !speechOn()) {
+        try { synth.cancel(); } catch (err) { ignore(); }
+      }
+    }
+  };
+
+  /* iOS/Safari suspend the context when the page is hidden. */
+  if (typeof document !== 'undefined' && document.addEventListener) {
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && ctx && soundOn()) { resume(); }
+    }, false);
+  }
+
+  TF.audio = api;
+}());
+
+/* ==========================================================================
+   TF.engine — visual engine: DPR-aware canvas particles + DOM glyph layer +
+   themed ambient drift. No assets, no network, no per-frame allocation in the
+   particle hot loop.
+   Public API: init(canvasEl, stageEl) · onKey(info) · onPointerMove(x, y)
+               onPointerDown(x, y) · combo(level) · setTheme(name)
+               applySettings()
+   ========================================================================== */
+(function () {
+  'use strict';
+
+  /* ---- Tuning ----------------------------------------------------------- */
+
+  var MAX_PARTICLES = 400;       // hard pool cap; spawns beyond it are dropped
+  var MAX_GLYPHS = 12;           // DOM glyphs alive at once; oldest is recycled
+  var MAX_DPR = 2;               // clamp: 3x on phones costs more than it shows
+  var GLYPH_LIFE = 1.5;          // seconds a glyph lives (pop-in + hold + out)
+  var GLYPH_LIFE_RM = 0.9;       // ...with reducedMotion
+  var TRAIL_MS = 22;             // pointer-move sparkle throttle
+  var TRAIL_MS_RM = 70;
+  var MAX_DT = 0.05;             // clamp after tab-switch / long frames
+
+  /* Particle shapes. Circles/rings/sparks draw additively (glow on the dark
+     theme gradients); confetti rectangles draw normally so they stay solid. */
+  var SHAPE_DOT = 0;
+  var SHAPE_CONFETTI = 1;
+  var SHAPE_RING = 2;
+  var SHAPE_SPARK = 3;
+
+  var FONT_STACK = '"SF Pro Rounded", "Segoe UI Rounded", system-ui, ' +
+    '-apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+
+  /* ---- Themes ----------------------------------------------------------- */
+  /* palette: 6-8 saturated colors · emoji: "other key" pops ·
+     count: items used for digit rows · ambient: slow background drifters ·
+     drift: 'up' (bubbles) | 'down' (petals/candy) | 'across' (starfield) */
+
+  var THEMES = {
+    space: {
+      palette: ['#7CF9FF', '#B98CFF', '#FF7BD5', '#FFD166', '#6EE7B7',
+        '#8AB4FF', '#FF9A76', '#FFFFFF'],
+      emoji: ['🚀', '🛸', '👽', '🪐', '☄️', '🌙', '⭐', '🌟', '🌌', '🤖'],
+      count: ['⭐', '🪐', '🚀', '🛸', '☄️', '🌙', '👽', '🌟', '🌠'],
+      ambient: ['⭐', '✨', '🌟', '🪐', '☄️', '🌙'],
+      drift: 'across'
+    },
+    ocean: {
+      palette: ['#4DD8FF', '#3FE0C5', '#8AF6FF', '#FFD37A', '#FF8FB1',
+        '#7BA7FF', '#C7FFEC', '#FFFFFF'],
+      emoji: ['🐠', '🐬', '🐙', '🦑', '🐳', '🦀', '🐡', '🐚', '🌊', '🦈'],
+      count: ['🐟', '🐠', '🐡', '🦀', '🐙', '🐬', '🐳', '🦐', '🐚'],
+      ambient: ['🫧', '🐟', '🌊', '🐚', '🫧', '🐠'],
+      drift: 'up'
+    },
+    garden: {
+      palette: ['#FFE066', '#8CE99A', '#FF9FD6', '#FFB86B', '#A5D8FF',
+        '#D8F999', '#FF8787', '#FFFFFF'],
+      emoji: ['🌻', '🌸', '🦋', '🐝', '🐞', '🌷', '🍀', '🌈', '🐌', '🌺'],
+      count: ['🌼', '🌸', '🐝', '🦋', '🍎', '🐞', '🍄', '🌷', '🍀'],
+      ambient: ['🌸', '🍃', '🦋', '🌼', '🍃', '🌷'],
+      drift: 'down'
+    },
+    candy: {
+      palette: ['#FF6FB5', '#FFD93D', '#7CE7FF', '#B388FF', '#FF9F6B',
+        '#9CFF8F', '#FF5E7E', '#FFFFFF'],
+      emoji: ['🍭', '🍬', '🧁', '🍩', '🍪', '🍫', '🍦', '🎂', '🍓', '🍡'],
+      count: ['🍬', '🍭', '🍩', '🧁', '🍪', '🍓', '🍫', '🍦', '🍡'],
+      ambient: ['🍬', '🍭', '🧁', '🍩', '🍪', '🍓'],
+      drift: 'down'
+    }
+  };
+
+  var DEFAULT_THEME = 'space';
+
+  /* ---- Module state ----------------------------------------------------- */
+
+  var canvas = null;
+  var ctx = null;
+  var stage = null;
+  var glyphLayer = null;
+  var ambientLayer = null;
+  var ready = false;
+
+  var vw = 0;                    // viewport size in CSS pixels
+  var vh = 0;
+  var vmin = 0;
+  var dpr = 1;
+
+  var themeName = DEFAULT_THEME;
+  var theme = THEMES[DEFAULT_THEME];
+  var palette = THEMES[DEFAULT_THEME].palette;
+  var reduced = false;
+
+  var pool = [];                 // preallocated; active particles are [0, live)
+  var live = 0;
+  var glyphs = [];               // preallocated DOM glyph records
+  var glyphsLive = 0;
+  var glyphSeq = 0;              // monotonic stamp, used to find the oldest
+
+  var rafId = 0;
+  var lastTs = 0;
+  var hidden = false;
+  var flash = 0;                 // 0..1 white screen flash, decays
+  var shake = 0;                 // pixels, decays
+  var shakeX = 0;                // resolved once per frame so the view offset
+  var shakeY = 0;                // stays stable across every draw call
+  var lastTrail = 0;
+  var resizeTimer = 0;
+  var ambientNodes = [];
+
+  var hasRaf = typeof requestAnimationFrame === 'function';
+  var canAnimate = typeof Element !== 'undefined' && Element.prototype &&
+    typeof Element.prototype.animate === 'function';
+
+  /* ---- Small helpers ---------------------------------------------------- */
+
+  function ignore() { /* intentionally empty: optional API failed, degrade */ }
+
+  function now() {
+    return (typeof performance !== 'undefined' && performance.now)
+      ? performance.now() : Date.now();
+  }
+
+  function settings() {
+    return (TF && TF.settings) ? TF.settings : null;
+  }
+
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+
+  /* Deterministic per-key hash: the same key always gets the same color, which
+     is the visual half of the audio module's "same key, same note" promise. */
+  function hashOf(str) {
+    var h = 2166136261, i;
+    for (i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = (h * 16777619) >>> 0;
+    }
+    return h >>> 0;
+  }
+
+  function paletteColor(i) {
+    return palette[((i % palette.length) + palette.length) % palette.length];
+  }
+
+  function randomColor() {
+    return palette[(Math.random() * palette.length) | 0];
+  }
+
+  /* The stylesheet owns the theme colours: --tf-p1 .. --tf-p8 on
+     body[data-theme] drive canvas particles as well as the UI, so glyphs and
+     confetti always match the panels. The built-in palette is the fallback for
+     a document rendered without those custom properties. */
+  function syncPalette() {
+    var style = null;
+    var list = [];
+    var value, i;
+    palette = theme.palette;
+    if (typeof getComputedStyle !== 'function' || !document.body) { return; }
+    try { style = getComputedStyle(document.body); } catch (err) { return; }
+    if (!style || typeof style.getPropertyValue !== 'function') { return; }
+    for (i = 1; i <= 8; i++) {
+      value = String(style.getPropertyValue('--tf-p' + i) || '').trim();
+      if (!value) { return; }
+      list.push(value);
+    }
+    palette = list;
+  }
+
+  function easeOutBack(k) {
+    var c1 = 1.70158, c3 = c1 + 1, u = k - 1;
+    return 1 + c3 * u * u * u + c1 * u * u;
+  }
+
+  /* ---- Particle pool ---------------------------------------------------- */
+
+  function makeParticle() {
+    return {
+      x: 0, y: 0, vx: 0, vy: 0,
+      life: 0, maxLife: 1,
+      size: 1, color: '#fff',
+      shape: SHAPE_DOT,
+      rot: 0, vr: 0,
+      grav: 0, drag: 0.9,
+      extra: 0                   // ring growth px/s · spark stretch factor
+    };
+  }
+
+  (function buildPool() {
+    var i;
+    for (i = 0; i < MAX_PARTICLES; i++) { pool.push(makeParticle()); }
+  }());
+
+  /* Every spawn goes through here: primitive args only, so the hot path never
+     allocates an options object. Returns silently when the pool is exhausted. */
+  function spawn(x, y, vx, vy, size, color, shape, life, grav, drag, vr, extra) {
+    if (live >= MAX_PARTICLES) { return; }
+    var p = pool[live++];
+    p.x = x; p.y = y; p.vx = vx; p.vy = vy;
+    p.size = size; p.color = color; p.shape = shape;
+    p.life = life; p.maxLife = life;
+    p.grav = grav; p.drag = drag;
+    p.rot = Math.random() * 6.283; p.vr = vr; p.extra = extra;
+  }
+
+  function updateParticles(dt) {
+    var i = 0, p, d;
+    while (i < live) {
+      p = pool[i];
+      p.life -= dt;
+      if (p.life <= 0) {
+        pool[i] = pool[--live];  // swap-remove: O(1), no allocation
+        pool[live] = p;
+        continue;
+      }
+      p.vy += p.grav * dt;
+      d = Math.pow(p.drag, dt * 60);
+      p.vx *= d;
+      p.vy *= d;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.rot += p.vr * dt;
+      i++;
+    }
+  }
+
+  function drawParticles() {
+    var i, p, t, r, s;
+
+    /* Pass 1 — additive glow shapes. */
+    ctx.globalCompositeOperation = 'lighter';
+    for (i = 0; i < live; i++) {
+      p = pool[i];
+      if (p.shape === SHAPE_CONFETTI) { continue; }
+      t = p.life / p.maxLife;
+      ctx.globalAlpha = t < 0.35 ? t / 0.35 : 1;
+      ctx.fillStyle = p.color;
+      if (p.shape === SHAPE_DOT) {
+        r = p.size * (0.35 + 0.65 * t);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r, 0, 6.283185, false);
+        ctx.fill();
+      } else if (p.shape === SHAPE_RING) {
+        r = p.size + (p.maxLife - p.life) * p.extra;
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 2 + 10 * t;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r, 0, 6.283185, false);
+        ctx.stroke();
+      } else {
+        s = p.size * (0.4 + 0.6 * t);
+        ctx.translate(p.x, p.y);
+        ctx.rotate(Math.atan2(p.vy, p.vx));
+        ctx.fillRect(-s * p.extra, -s * 0.35, s * p.extra * 2, s * 0.7);
+        applyViewTransform();     // absolute reset, no save/restore churn
+      }
+    }
+
+    /* Pass 2 — solid confetti. */
+    ctx.globalCompositeOperation = 'source-over';
+    for (i = 0; i < live; i++) {
+      p = pool[i];
+      if (p.shape !== SHAPE_CONFETTI) { continue; }
+      t = p.life / p.maxLife;
+      ctx.globalAlpha = t < 0.3 ? t / 0.3 : 1;
+      ctx.fillStyle = p.color;
+      s = p.size;
+      /* Squash on the roll axis so confetti reads as tumbling paper. */
+      r = Math.abs(Math.cos(p.rot * 1.7));
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillRect(-s, -s * 0.42 * r - 0.5, s * 2, s * 0.84 * r + 1);
+      applyViewTransform();
+    }
+
+    ctx.globalAlpha = 1;
+  }
+
+  /* ---- Canvas sizing ---------------------------------------------------- */
+
+  function measure() {
+    var w = 0, h = 0, rect;
+    if (stage && stage.getBoundingClientRect) {
+      rect = stage.getBoundingClientRect();
+      w = rect.width;
+      h = rect.height;
+    }
+    if (!w || !h) {
+      w = (typeof innerWidth === 'number' && innerWidth) ||
+        (document.documentElement && document.documentElement.clientWidth) || 1;
+      h = (typeof innerHeight === 'number' && innerHeight) ||
+        (document.documentElement && document.documentElement.clientHeight) || 1;
+    }
+    vw = Math.max(1, w);
+    vh = Math.max(1, h);
+    vmin = Math.min(vw, vh);
+  }
+
+  function resize() {
+    if (!canvas || !ctx) { return; }
+    measure();
+    dpr = clamp((typeof devicePixelRatio === 'number' && devicePixelRatio) || 1,
+      1, MAX_DPR);
+    var pw = Math.max(1, Math.round(vw * dpr));
+    var ph = Math.max(1, Math.round(vh * dpr));
+    if (canvas.width !== pw || canvas.height !== ph) {
+      canvas.width = pw;
+      canvas.height = ph;
+    }
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    applyViewTransform();
+    if (!running()) { clearCanvas(); }
+  }
+
+  function applyViewTransform() {
+    ctx.setTransform(dpr, 0, 0, dpr, shakeX * dpr, shakeY * dpr);
+  }
+
+  function clearCanvas() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    applyViewTransform();
+  }
+
+  function scheduleResize() {
+    resize();
+    /* Fullscreen transitions report stale metrics for a frame or two. */
+    if (resizeTimer) { clearTimeout(resizeTimer); }
+    resizeTimer = setTimeout(function () {
+      resizeTimer = 0;
+      resize();
+    }, 140);
+  }
+
+  /* ---- DOM glyph layer -------------------------------------------------- */
+
+  function makeGlyph() {
+    var el = document.createElement('div');
+    var main = document.createElement('div');
+    var row = document.createElement('div');
+    el.style.position = 'absolute';
+    el.style.left = '0';
+    el.style.top = '0';
+    el.style.display = 'none';
+    el.style.pointerEvents = 'none';
+    el.style.willChange = 'transform, opacity';
+    el.style.textAlign = 'center';
+    el.style.lineHeight = '1';
+    el.style.fontFamily = FONT_STACK;
+    el.style.fontWeight = '900';
+    el.style.userSelect = 'none';
+    el.style.webkitUserSelect = 'none';
+    main.style.lineHeight = '1';
+    main.style.letterSpacing = '0.02em';
+    row.style.lineHeight = '1';
+    row.style.marginTop = '0.12em';
+    row.style.whiteSpace = 'nowrap';
+    el.appendChild(main);
+    el.appendChild(row);
+    glyphLayer.appendChild(el);
+    return {
+      el: el, main: main, row: row,
+      t: 0, life: 1, x: 0, y: 0, size: 0, tilt: 0, drift: 0, stamp: 0
+    };
+  }
+
+  /* Takes a free slot, or recycles the oldest live glyph when the cap is hit. */
+  function acquireGlyph() {
+    var i, oldest, oldestIdx;
+    if (glyphsLive < MAX_GLYPHS) {
+      if (glyphs.length <= glyphsLive) { glyphs.push(makeGlyph()); }
+      return glyphs[glyphsLive++];
+    }
+    oldestIdx = 0;
+    oldest = glyphs[0].stamp;
+    for (i = 1; i < glyphsLive; i++) {
+      if (glyphs[i].stamp < oldest) { oldest = glyphs[i].stamp; oldestIdx = i; }
+    }
+    return glyphs[oldestIdx];
+  }
+
+  function releaseGlyph(index) {
+    var g = glyphs[index];
+    g.el.style.display = 'none';
+    g.row.textContent = '';
+    glyphs[index] = glyphs[--glyphsLive];
+    glyphs[glyphsLive] = g;
+  }
+
+  /* text: the big character · rowText: emoji row for digit counting ·
+     rowCount: how many emoji that row holds (drives its fit + the safe area) */
+  function showGlyph(text, rowText, rowCount, color, sizeVmin) {
+    if (!ready) { return null; }
+    var g = acquireGlyph();
+    var px = Math.max(28, Math.round(vmin * sizeVmin / 100));
+    var rowPx = 0;
+    var halfW = px * 0.62;
+    var halfH = px * 0.62;
+    var pad = vmin * 0.04;
+
+    g.main.textContent = text;
+    g.main.style.fontSize = px + 'px';
+    g.main.style.color = color;
+    if (rowText && rowCount > 0) {
+      /* Shrink the row until the whole count fits across the viewport. */
+      rowPx = Math.max(12, Math.min(vmin * 0.09, (vw * 0.78) / rowCount));
+      g.row.textContent = rowText;
+      g.row.style.fontSize = Math.round(rowPx) + 'px';
+      g.row.style.display = '';
+      halfW = Math.max(halfW, rowCount * rowPx * 0.62);
+      halfH += rowPx * 0.7;
+    } else {
+      g.row.textContent = '';
+      g.row.style.display = 'none';
+    }
+    /* Soft double halo keeps glyphs legible over particles without canvas blur. */
+    g.el.style.textShadow = reduced ? 'none'
+      : '0 0.04em 0 rgba(0,0,0,0.35), 0 0 0.5em rgba(255,255,255,0.28)';
+
+    /* Keep the whole glyph on screen; the bounds collapse to the centre rather
+       than inverting when a glyph is nearly as big as the viewport. */
+    g.x = clamp(rnd(vw * 0.2, vw * 0.8),
+      Math.min(halfW + pad, vw * 0.5), Math.max(vw - halfW - pad, vw * 0.5));
+    g.y = clamp(rnd(vh * 0.24, vh * 0.76),
+      Math.min(halfH + pad, vh * 0.5), Math.max(vh - halfH - pad, vh * 0.5));
+    g.size = px;
+    g.tilt = reduced ? 0 : rnd(-14, 14);
+    g.drift = reduced ? 0 : rnd(-1, 1);
+    g.t = 0;
+    g.life = reduced ? GLYPH_LIFE_RM : GLYPH_LIFE;
+    g.stamp = ++glyphSeq;
+    g.el.style.display = 'block';
+    paintGlyph(g);
+    ensureLoop();
+    return g;
+  }
+
+  function paintGlyph(g) {
+    var u = g.t / g.life, k, s, a, ty, rot;
+    var IN = reduced ? 0.3 : 0.22, OUT = reduced ? 0.72 : 0.78;
+
+    if (u < IN) {
+      k = u / IN;
+      s = 0.3 + 0.7 * (reduced ? k : easeOutBack(k));
+      a = clamp(k * 3, 0, 1);
+      rot = g.tilt * (1 - k);
+      ty = 0;
+    } else if (u < OUT) {
+      k = (u - IN) / (OUT - IN);
+      s = 1;
+      a = 1;
+      rot = 0;
+      /* gentle float while it holds */
+      ty = reduced ? 0 : Math.sin(k * 3.1) * g.size * 0.03;
+    } else {
+      k = (u - OUT) / (1 - OUT);
+      s = 1 + (reduced ? 0.1 : 0.42) * k * k;
+      a = 1 - k * k;
+      rot = g.drift * 10 * k;
+      ty = -k * g.size * (reduced ? 0.1 : 0.35);
+    }
+
+    g.el.style.opacity = a;
+    g.el.style.transform = 'translate(' + (g.x).toFixed(1) + 'px,' +
+      (g.y + ty).toFixed(1) + 'px) translate(-50%,-50%) scale(' +
+      s.toFixed(3) + ') rotate(' + rot.toFixed(2) + 'deg)';
+  }
+
+  function updateGlyphs(dt) {
+    var i = 0;
+    while (i < glyphsLive) {
+      var g = glyphs[i];
+      g.t += dt;
+      if (g.t >= g.life) { releaseGlyph(i); continue; }
+      paintGlyph(g);
+      i++;
+    }
+  }
+
+  /* ---- Bursts ----------------------------------------------------------- */
+
+  function burst(x, y, count, power, color) {
+    var i, ang, spd, sz, c;
+    var n = Math.round(count * (reduced ? 0.4 : 1));
+    for (i = 0; i < n; i++) {
+      ang = Math.random() * 6.283185;
+      spd = power * rnd(0.35, 1.2);
+      sz = rnd(3, 9) * (reduced ? 0.8 : 1);
+      c = color || randomColor();
+      spawn(x, y, Math.cos(ang) * spd, Math.sin(ang) * spd, sz, c,
+        Math.random() < 0.22 ? SHAPE_SPARK : SHAPE_DOT,
+        rnd(0.5, 1.15), rnd(260, 640), 0.94, 0, rnd(1.4, 3));
+    }
+    /* One expanding ring gives the burst a shockwave read. */
+    spawn(x, y, 0, 0, vmin * 0.03, color || randomColor(), SHAPE_RING,
+      reduced ? 0.28 : 0.45, 0, 1, 0, vmin * (reduced ? 1.1 : 2.2));
+  }
+
+  function confetti(strength) {
+    var i, n = Math.round((reduced ? 40 : 130) * strength);
+    var x, y;
+    for (i = 0; i < n; i++) {
+      x = rnd(-vw * 0.05, vw * 1.05);
+      y = rnd(-vh * 0.35, -10);
+      spawn(x, y, rnd(-70, 70), rnd(60, 260), rnd(4, 11), randomColor(),
+        SHAPE_CONFETTI, rnd(1.4, 2.4), rnd(340, 620), 0.985, rnd(-7, 7), 0);
+    }
+  }
+
+  function ripple(x, y, big) {
+    spawn(x, y, 0, 0, vmin * 0.04, paletteColor(0), SHAPE_RING,
+      big ? 0.75 : 0.45, 0, 1, 0, vmin * (big ? 2.6 : 1.6));
+    spawn(x, y, 0, 0, vmin * 0.02, paletteColor(2), SHAPE_RING,
+      big ? 0.6 : 0.35, 0, 1, 0, vmin * (big ? 2.0 : 1.2));
+  }
+
+  function fountain(count) {
+    var i, x, ang, spd;
+    var n = Math.round(count * (reduced ? 0.4 : 1));
+    for (i = 0; i < n; i++) {
+      x = rnd(0, vw);
+      ang = rnd(-2.5, -0.64);
+      spd = rnd(vh * 0.6, vh * 1.15);
+      spawn(x, vh + 8, Math.cos(ang) * spd * 0.35, Math.sin(ang) * spd,
+        rnd(3, 10), randomColor(),
+        Math.random() < 0.4 ? SHAPE_CONFETTI : SHAPE_DOT,
+        rnd(1.0, 1.8), rnd(520, 900), 0.985, rnd(-6, 6), 2);
+    }
+  }
+
+  /* ---- Ambient drift layer ---------------------------------------------- */
+
+  function clearAmbient() {
+    var i;
+    for (i = 0; i < ambientNodes.length; i++) {
+      var node = ambientNodes[i];
+      if (node.anim) { try { node.anim.cancel(); } catch (err) { ignore(); } }
+      if (node.el && node.el.parentNode) { node.el.parentNode.removeChild(node.el); }
+    }
+    ambientNodes.length = 0;
+  }
+
+  /* Ambient motion runs on the compositor (Web Animations), never on the rAF
+     loop, so the loop can still fully idle while the background drifts. */
+  function buildAmbient() {
+    clearAmbient();
+    if (!ambientLayer || reduced || !canAnimate) { return; }
+    var set = theme.ambient, dir = theme.drift;
+    var count = Math.min(set.length, 7);
+    var i;
+    for (i = 0; i < count; i++) {
+      var el = document.createElement('div');
+      el.textContent = set[i % set.length];
+      el.setAttribute('aria-hidden', 'true');
+      el.style.position = 'absolute';
+      /* 'across' drifters carry their own -15vw..115vw sweep, so seeding a
+         left offset as well would park them off the right edge. */
+      el.style.left = dir === 'across'
+        ? '0'
+        : (5 + (90 / count) * i + rnd(-4, 4)).toFixed(2) + '%';
+      el.style.top = '0';
+      el.style.fontSize = rnd(4.5, 9.5).toFixed(2) + 'vmin';
+      el.style.lineHeight = '1';
+      el.style.pointerEvents = 'none';
+      el.style.willChange = 'transform, opacity';
+      el.style.filter = 'saturate(0.9)';
+      ambientLayer.appendChild(el);
+
+      var dur = rnd(26000, 58000);
+      var sway = rnd(3, 9);
+      var lo = rnd(0.14, 0.3);
+      var hi = lo + rnd(0.08, 0.2);
+      var frames;
+
+      if (dir === 'up') {
+        frames = [
+          { transform: 'translate3d(0,110vh,0) rotate(0deg)', opacity: 0 },
+          { transform: 'translate3d(' + sway + 'vw,72vh,0) rotate(6deg)', opacity: hi, offset: 0.2 },
+          { transform: 'translate3d(' + (-sway) + 'vw,36vh,0) rotate(-6deg)', opacity: hi, offset: 0.6 },
+          { transform: 'translate3d(0,-25vh,0) rotate(4deg)', opacity: 0 }
+        ];
+      } else if (dir === 'down') {
+        frames = [
+          { transform: 'translate3d(0,-25vh,0) rotate(-15deg)', opacity: 0 },
+          { transform: 'translate3d(' + sway + 'vw,20vh,0) rotate(25deg)', opacity: hi, offset: 0.22 },
+          { transform: 'translate3d(' + (-sway) + 'vw,64vh,0) rotate(-25deg)', opacity: hi, offset: 0.66 },
+          { transform: 'translate3d(0,112vh,0) rotate(20deg)', opacity: 0 }
+        ];
+      } else {
+        frames = [
+          { transform: 'translate3d(-15vw,' + rnd(6, 84).toFixed(1) + 'vh,0) scale(0.85)', opacity: 0 },
+          { transform: 'translate3d(25vw,' + rnd(6, 84).toFixed(1) + 'vh,0) scale(1)', opacity: hi, offset: 0.25 },
+          { transform: 'translate3d(70vw,' + rnd(6, 84).toFixed(1) + 'vh,0) scale(0.95)', opacity: lo, offset: 0.7 },
+          { transform: 'translate3d(115vw,' + rnd(6, 84).toFixed(1) + 'vh,0) scale(0.85)', opacity: 0 }
+        ];
+      }
+
+      var anim = null;
+      try {
+        anim = el.animate(frames, {
+          duration: dur,
+          delay: -Math.random() * dur,   // stagger: the sky is never empty
+          iterations: Infinity,
+          easing: 'linear'
+        });
+      } catch (err) {
+        anim = null;
+      }
+      ambientNodes.push({ el: el, anim: anim });
+    }
+  }
+
+  /* ---- Render loop ------------------------------------------------------ */
+
+  function running() { return rafId !== 0; }
+
+  function busy() {
+    return live > 0 || glyphsLive > 0 || flash > 0.002 || shake > 0.15;
+  }
+
+  function ensureLoop() {
+    if (!ready || hidden || rafId || !hasRaf) { return; }
+    lastTs = 0;
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function stopLoop() {
+    if (rafId) {
+      if (typeof cancelAnimationFrame === 'function') { cancelAnimationFrame(rafId); }
+      rafId = 0;
+    }
+  }
+
+  function frame(ts) {
+    rafId = 0;
+    var dt;
+    if (!lastTs) { lastTs = ts; }
+    dt = (ts - lastTs) / 1000;
+    lastTs = ts;
+    if (dt < 0) { dt = 0; }
+    if (dt > MAX_DT) { dt = MAX_DT; }
+
+    updateParticles(dt);
+    updateGlyphs(dt);
+    if (flash > 0) { flash -= dt * (reduced ? 6 : 2.6); if (flash < 0) { flash = 0; } }
+    if (shake > 0) { shake -= dt * 60; if (shake < 0) { shake = 0; } }
+    if (shake > 0.15) {
+      shakeX = rnd(-shake, shake);
+      shakeY = rnd(-shake, shake);
+    } else {
+      shakeX = 0;
+      shakeY = 0;
+    }
+
+    render();
+
+    if (busy() && !hidden) {
+      rafId = requestAnimationFrame(frame);
+    } else {
+      shake = 0;
+      shakeX = 0;
+      shakeY = 0;
+      clearCanvas();
+    }
+  }
+
+  function render() {
+    clearCanvas();
+    drawParticles();
+    if (flash > 0.002) {
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = Math.min(0.32, flash * 0.32);
+      ctx.fillStyle = paletteColor(7);
+      ctx.fillRect(0, 0, vw, vh);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+    }
+  }
+
+  /* ---- Layer setup ------------------------------------------------------ */
+
+  function ensureLayer(id) {
+    var el = document.getElementById(id);
+    if (!el && stage) {
+      el = document.createElement('div');
+      el.id = id;
+      stage.appendChild(el);
+    }
+    if (el) {
+      /* Defensive geometry: correct whether or not the shell CSS styles it. */
+      el.style.position = 'absolute';
+      el.style.left = '0';
+      el.style.top = '0';
+      el.style.right = '0';
+      el.style.bottom = '0';
+      el.style.overflow = 'hidden';
+      el.style.pointerEvents = 'none';
+    }
+    return el;
+  }
+
+  /* ---- Public API ------------------------------------------------------- */
+
+  function init(canvasEl, stageEl) {
+    if (ready || !canvasEl || !canvasEl.getContext) { return; }
+    stage = stageEl || canvasEl.parentNode || document.body;
+    canvas = canvasEl;
+    try {
+      ctx = canvas.getContext('2d', { alpha: true });
+    } catch (err) {
+      ctx = null;
+    }
+    if (!ctx) { return; }
+
+    ambientLayer = ensureLayer('ambient-layer');
+    glyphLayer = ensureLayer('glyph-layer');
+    if (!glyphLayer) { return; }
+
+    ready = true;
+    applySettings();
+    resize();
+
+    if (typeof addEventListener === 'function') {
+      addEventListener('resize', scheduleResize, false);
+      addEventListener('orientationchange', scheduleResize, false);
+      document.addEventListener('fullscreenchange', scheduleResize, false);
+      document.addEventListener('webkitfullscreenchange', scheduleResize, false);
+      document.addEventListener('visibilitychange', function () {
+        hidden = !!document.hidden;
+        if (hidden) {
+          stopLoop();
+        } else {
+          scheduleResize();
+          if (busy()) { ensureLoop(); }
+        }
+      }, false);
+    }
+    if (typeof ResizeObserver === 'function') {
+      try {
+        new ResizeObserver(resize).observe(stage);
+      } catch (err) {
+        ignore();                  // observation is a bonus, resize events suffice
+      }
+    }
+  }
+
+  function onKey(info) {
+    if (!ready || !info) { return; }
+    var key = typeof info.key === 'string' ? info.key : '';
+    var code = typeof info.code === 'string' ? info.code : '';
+    var isLetter = typeof info.isLetter === 'boolean'
+      ? info.isLetter : (key.length === 1 && /[a-z]/i.test(key));
+    var isDigit = typeof info.isDigit === 'boolean'
+      ? info.isDigit : (key.length === 1 && key >= '0' && key <= '9');
+    var comboLevel = (typeof info.comboLevel === 'number' && info.comboLevel > 0)
+      ? info.comboLevel : 0;
+    var boost = 1 + Math.min(0.8, comboLevel * 0.06);
+    var seed = hashOf(code || key || 'k');
+    var color = paletteColor(seed);
+    var g;
+
+    if (code === 'Space' || key === ' ' || code === 'Enter' ||
+        code === 'NumpadEnter' || key === 'Enter') {
+      confetti(clamp(boost, 1, 1.8));
+      ripple(vw * 0.5, vh * 0.5, true);
+      burst(vw * 0.5, vh * 0.5, 26, vmin * 1.1, null);
+      flash = Math.max(flash, reduced ? 0.25 : 0.55);
+      ensureLoop();
+      return;
+    }
+
+    if (isLetter) {
+      g = showGlyph(key.toUpperCase(), '', 0, color, reduced ? 28 : 36);
+      burst(g ? g.x : vw * 0.5, g ? g.y : vh * 0.5,
+        Math.round(30 * boost), vmin * 0.95 * boost, null);
+      ripple(g ? g.x : vw * 0.5, g ? g.y : vh * 0.5, false);
+      return;
+    }
+
+    if (isDigit) {
+      var n = key.charCodeAt(0) - 48;
+      var icon = theme.count[(n + theme.count.length - 1) % theme.count.length];
+      var row = '';
+      var i;
+      for (i = 0; i < n; i++) { row += icon; }
+      g = showGlyph(key, row, n, color, reduced ? 24 : 30);
+      burst(g ? g.x : vw * 0.5, g ? g.y : vh * 0.5,
+        Math.round(18 + n * 3), vmin * 0.8 * boost, color);
+      return;
+    }
+
+    /* Everything else: a themed emoji, picked deterministically per key. */
+    var emoji = theme.emoji[seed % theme.emoji.length];
+    g = showGlyph(emoji, '', 0, color, reduced ? 24 : 32);
+    burst(g ? g.x : vw * 0.5, g ? g.y : vh * 0.5,
+      Math.round(24 * boost), vmin * 0.85 * boost, null);
+  }
+
+  function onPointerMove(x, y) {
+    if (!ready) { return; }
+    var t = now();
+    if (t - lastTrail < (reduced ? TRAIL_MS_RM : TRAIL_MS)) { return; }
+    lastTrail = t;
+    var n = reduced ? 1 : 3, i, ang, spd;
+    for (i = 0; i < n; i++) {
+      ang = Math.random() * 6.283185;
+      spd = rnd(10, 70);
+      spawn(x + rnd(-6, 6), y + rnd(-6, 6),
+        Math.cos(ang) * spd, Math.sin(ang) * spd,
+        rnd(2, 6), randomColor(), SHAPE_DOT,
+        rnd(0.35, 0.8), rnd(40, 160), 0.9, 0, 1.6);
+    }
+    ensureLoop();
+  }
+
+  function onPointerDown(x, y) {
+    if (!ready) { return; }
+    burst(x, y, 44, vmin * 1.25, null);
+    ripple(x, y, false);
+    ensureLoop();
+  }
+
+  function combo(level) {
+    if (!ready) { return; }
+    var strength = clamp(1 + (typeof level === 'number' ? level : 0) / 100, 1, 2.2);
+    fountain(Math.round(60 * strength));
+    confetti(0.7 * strength);
+    ripple(vw * 0.5, vh * 0.55, true);
+    flash = Math.max(flash, reduced ? 0.3 : 0.85);
+    shake = reduced ? 0 : Math.min(14, 7 * strength);
+    ensureLoop();
+  }
+
+  function setTheme(name) {
+    var next = Object.prototype.hasOwnProperty.call(THEMES, name)
+      ? name : DEFAULT_THEME;
+    var changed = next !== themeName;
+    themeName = next;
+    theme = THEMES[next];
+    if (document.body) { document.body.setAttribute('data-theme', next); }
+    syncPalette();
+    if (changed || !ambientNodes.length) { buildAmbient(); }
+  }
+
+  function applySettings() {
+    var s = settings();
+    var wantReduced = !!(s && s.reducedMotion);
+    var wantTheme = (s && typeof s.theme === 'string') ? s.theme : themeName;
+    var reducedChanged = wantReduced !== reduced;
+    reduced = wantReduced;
+    setTheme(wantTheme);
+    if (reducedChanged) { buildAmbient(); }
+    if (reduced && live > MAX_PARTICLES * 0.5) { live = Math.floor(MAX_PARTICLES * 0.5); }
+  }
+
+  TF.engine = {
+    init: init,
+    onKey: onKey,
+    onPointerMove: onPointerMove,
+    onPointerDown: onPointerDown,
+    combo: combo,
+    setTheme: setTheme,
+    applySettings: applySettings
+  };
+}());
+
+/* ============================================================
+   TinyFingers Deluxe - shell
+   Lock system, state machine, input capture, parent gate,
+   settings, stats, and wiring to TF.audio / TF.engine.
+   ============================================================ */
+(function () {
+  'use strict';
+
+  /* TF, TF.audio and TF.engine already exist: the modules above run first. */
+
+  /* ---------------- element handles ---------------- */
+  var doc = document;
+  var body = doc.body;
+  var el = {
+    stage: doc.getElementById('stage'),
+    canvas: doc.getElementById('fx-canvas'),
+    glyphLayer: doc.getElementById('glyph-layer'),
+    ambientLayer: doc.getElementById('ambient-layer'),
+    hudTotal: doc.getElementById('hud-total'),
+    comboFill: doc.getElementById('combo-fill'),
+    comboValue: doc.getElementById('combo-value'),
+    startBtn: doc.getElementById('start-btn'),
+    capNote: doc.getElementById('cap-note'),
+    badge: doc.getElementById('parent-badge'),
+    unlock: doc.getElementById('unlock'),
+    badgeCode: doc.getElementById('badge-code'),
+    keypadCode: doc.getElementById('keypad-code'),
+    keypad: doc.getElementById('keypad'),
+    gateDots: doc.getElementById('gate-dots'),
+    gateCancel: doc.getElementById('gate-cancel'),
+    resumeBtn: doc.getElementById('resume-btn'),
+    exitBtn: doc.getElementById('exit-btn'),
+    setSound: doc.getElementById('set-sound'),
+    setSpeech: doc.getElementById('set-speech'),
+    setMotion: doc.getElementById('set-motion'),
+    themePicker: doc.getElementById('theme-picker'),
+    repTotal: doc.getElementById('rep-total'),
+    repMinutes: doc.getElementById('rep-minutes'),
+    repUnique: doc.getElementById('rep-unique'),
+    repCombo: doc.getElementById('rep-combo'),
+    repFav: doc.getElementById('rep-fav'),
+    repChaos: doc.getElementById('rep-chaos')
+  };
+
+  /* ---------------- constants ---------------- */
+  var THEMES = ['space', 'ocean', 'garden', 'candy'];
+  var STORAGE_KEY = 'tf-settings';
+  var COMBO_WINDOW_MS = 5000;
+  /* the top rung has to stay reachable inside one 5s window, or the combo
+     meter would target a number no toddler can ever produce */
+  var MILESTONES = [25, 50, 100, 200];
+  var CODE_LENGTH = 4;
+  var HOLD_MS = 2000;
+  var GATE_IDLE_MS = 15000;
+  var CURSOR_IDLE_MS = 2000;
+  var COMBO_DECAY_MS = 250;
+  var TRAP_MIN_GAP_MS = 400;
+  var BADGE_NEAR_PX = 190;
+  var BADGE_REVEAL_MS = 4500;
+  var POINTER_MOVE_MS = 16;
+  var CHAOS = [
+    { min: 0, title: 'Gentle Tapper 🐣' },
+    { min: 25, title: 'Button Explorer 🔍' },
+    { min: 100, title: 'Keyboard Wrangler 🎹' },
+    { min: 300, title: 'Smash Apprentice ⚡' },
+    { min: 700, title: 'Chaos Gremlin 🌀' },
+    { min: 1500, title: 'Legendary Keyboard Destroyer 👑' }
+  ];
+
+  /* ---------------- module handles ----------------
+     Both modules are defined above in this same script tag and both keep
+     their own feature detection, so the shell calls them directly.
+     audio.speak() gates itself on settings.speech, engine.applySettings()
+     reads the theme and reducedMotion straight off TF.settings.      */
+  var audio = TF.audio;
+  var engine = TF.engine;
+
+  /* ---------------- settings (owned by shell) ---------------- */
+  function prefersReducedMotion() {
+    try {
+      return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    } catch (err) { return false; }
+  }
+
+  var settings = TF.settings = {
+    sound: true,
+    speech: true,
+    reducedMotion: prefersReducedMotion(),
+    theme: 'space'
+  };
+
+  function storage() {
+    try {
+      var s = window.localStorage;
+      if (!s) { return null; }
+      var probe = '__tf__';
+      s.setItem(probe, '1');
+      s.removeItem(probe);
+      return s;
+    } catch (err) { return null; }
+  }
+
+  function loadSettings() {
+    var s = storage();
+    if (!s) { return; }
+    var raw;
+    try { raw = s.getItem(STORAGE_KEY); } catch (err) { return; }
+    if (!raw) { return; }
+    var data;
+    try { data = JSON.parse(raw); } catch (err) { return; }
+    if (!data || typeof data !== 'object') { return; }
+    if (typeof data.sound === 'boolean') { settings.sound = data.sound; }
+    if (typeof data.speech === 'boolean') { settings.speech = data.speech; }
+    if (typeof data.reducedMotion === 'boolean') { settings.reducedMotion = data.reducedMotion; }
+    if (THEMES.indexOf(data.theme) !== -1) { settings.theme = data.theme; }
+  }
+
+  function saveSettings() {
+    var s = storage();
+    if (!s) { return; }
+    try {
+      s.setItem(STORAGE_KEY, JSON.stringify({
+        sound: settings.sound,
+        speech: settings.speech,
+        reducedMotion: settings.reducedMotion,
+        theme: settings.theme
+      }));
+    } catch (err) { /* storage blocked - settings stay session-only */ }
+  }
+
+  function syncSettingsUI() {
+    el.setSound.setAttribute('aria-pressed', settings.sound ? 'true' : 'false');
+    el.setSpeech.setAttribute('aria-pressed', settings.speech ? 'true' : 'false');
+    el.setMotion.setAttribute('aria-pressed', settings.reducedMotion ? 'true' : 'false');
+    var buttons = el.themePicker.querySelectorAll('[data-theme]');
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].setAttribute('aria-pressed', buttons[i].getAttribute('data-theme') === settings.theme ? 'true' : 'false');
+    }
+  }
+
+  function applySettings(persist) {
+    body.setAttribute('data-theme', settings.theme);
+    body.setAttribute('data-reduced', settings.reducedMotion ? '1' : '0');
+    engine.applySettings();
+    audio.applySettings();
+    syncSettingsUI();
+    if (persist !== false) { saveSettings(); }
+  }
+
+  /* ---------------- shared state ---------------- */
+  var state = TF.state = {
+    name: 'idle',
+    lockAPI: false,
+    fullscreen: false,
+    code: '',
+    combo: 0,
+    total: 0
+  };
+
+  function setState(name) {
+    state.name = name;
+    body.setAttribute('data-state', name);
+    badgeRect = null;
+    cancelHold();
+    /* the keypad gate belongs to 'playing' only: a stale gate would float
+       above the relock overlay and could unlock an already-unlocked machine */
+    if (name !== 'playing') {
+      setBadgeNear(false);
+      closeGate();
+    }
+  }
+
+  function isPlayLike() {
+    return state.name === 'playing' || state.name === 'relock-pending' || state.name === 'unlocked';
+  }
+
+  /* ---------------- fullscreen + keyboard lock ---------------- */
+  function fullscreenElement() {
+    return doc.fullscreenElement || doc.webkitFullscreenElement || null;
+  }
+  function isFullscreen() { return !!fullscreenElement(); }
+
+  /* Some browsers (iOS Safari, iframes without allowfullscreen) never offer
+     fullscreen at all: that must degrade to plain in-page play, not to a
+     relock overlay that can never be satisfied. */
+  var canFullscreen = typeof (doc.documentElement.requestFullscreen ||
+    doc.documentElement.webkitRequestFullscreen) === 'function';
+
+  function requestFullscreen() {
+    var target = doc.documentElement;
+    var fn = target.requestFullscreen || target.webkitRequestFullscreen;
+    if (typeof fn !== 'function') { return Promise.reject(new Error('no-fullscreen')); }
+    var result;
+    try { result = fn.call(target, { navigationUI: 'hide' }); } catch (err) { return Promise.reject(err); }
+    return result && typeof result.then === 'function' ? result : Promise.resolve();
+  }
+
+  function exitFullscreen() {
+    var fn = doc.exitFullscreen || doc.webkitExitFullscreen;
+    if (typeof fn !== 'function' || !isFullscreen()) { return Promise.resolve(); }
+    var result;
+    try { result = fn.call(doc); } catch (err) { return Promise.resolve(); }
+    return result && typeof result.then === 'function' ? result.catch(function () {}) : Promise.resolve();
+  }
+
+  function hasKeyboardLock() {
+    return !!(navigator.keyboard && typeof navigator.keyboard.lock === 'function');
+  }
+
+  function lockKeyboard() {
+    if (!hasKeyboardLock()) { state.lockAPI = false; return Promise.resolve(false); }
+    var result;
+    /* no arguments = capture every key, including Esc and Meta */
+    try { result = navigator.keyboard.lock(); } catch (err) { state.lockAPI = false; return Promise.resolve(false); }
+    var p = result && typeof result.then === 'function' ? result : Promise.resolve();
+    return p.then(function () { state.lockAPI = true; return true; },
+      function () { state.lockAPI = false; return false; });
+  }
+
+  function unlockKeyboard() {
+    if (!(navigator.keyboard && typeof navigator.keyboard.unlock === 'function')) { return; }
+    try { navigator.keyboard.unlock(); } catch (err) { /* already released */ }
+    state.lockAPI = false;
+  }
+
+  /* keyboard lock must be requested with fullscreen active or pending */
+  function engageLock() {
+    return requestFullscreen().then(function () {
+      state.fullscreen = isFullscreen();
+      return lockKeyboard();
+    });
+  }
+
+  /* ---------------- history trap ---------------- */
+  var historyTrapped = false;
+  var lastTrapAt = 0;
+  var trapPending = 0;
+  /* Safari rate-limits pushState (~100 per 30s). Space the pushes out, but a
+     rate-limited push must be deferred rather than dropped: a back press with
+     no forward trap in place leaves the page entirely. */
+  function pushTrap() {
+    if (!(window.history && typeof history.pushState === 'function')) { return; }
+    historyTrapped = true;
+    var now = Date.now();
+    var wait = TRAP_MIN_GAP_MS - (now - lastTrapAt);
+    if (wait > 0) {
+      if (!trapPending) {
+        trapPending = window.setTimeout(function () {
+          trapPending = 0;
+          if (historyTrapped) { pushTrap(); }
+        }, wait);
+      }
+      return;
+    }
+    lastTrapAt = now;
+    try { history.pushState({ tf: 1 }, ''); } catch (err) {
+      if (!trapPending) {
+        trapPending = window.setTimeout(function () {
+          trapPending = 0;
+          if (historyTrapped) { pushTrap(); }
+        }, TRAP_MIN_GAP_MS);
+      }
+    }
+  }
+  window.addEventListener('popstate', function () {
+    if (historyTrapped && isPlayLike()) { pushTrap(); }
+  });
+
+  /* ---------------- stats + combo ---------------- */
+  var stats = {
+    total: 0,
+    unique: null,
+    perKey: null,
+    startedAt: 0,
+    maxCombo: 0
+  };
+  var comboTimes = [];
+  var milestoneIdx = 0;
+
+  function resetStats() {
+    stats.total = 0;
+    stats.unique = Object.create(null);
+    stats.perKey = Object.create(null);
+    stats.startedAt = Date.now();
+    stats.maxCombo = 0;
+    comboTimes.length = 0;
+    milestoneIdx = 0;
+    state.total = 0;
+    state.combo = 0;
+    stopDecay();
+    renderHud();
+  }
+  resetStats();
+
+  function pruneCombo(now) {
+    var cut = now - COMBO_WINDOW_MS;
+    var i = 0;
+    while (i < comboTimes.length && comboTimes[i] < cut) { i++; }
+    if (i > 0) { comboTimes.splice(0, i); }
+    if (comboTimes.length === 0) { milestoneIdx = 0; }
+    return comboTimes.length;
+  }
+
+  function nextMilestone() {
+    return MILESTONES[Math.min(milestoneIdx, MILESTONES.length - 1)];
+  }
+
+  function renderHud() {
+    el.hudTotal.textContent = String(stats.total);
+    el.comboValue.textContent = String(state.combo);
+    var target = nextMilestone();
+    var pct = target > 0 ? Math.min(100, (state.combo / target) * 100) : 0;
+    el.comboFill.style.width = pct.toFixed(1) + '%';
+  }
+
+  var hudDirty = false;
+  function scheduleHud() {
+    if (hudDirty) { return; }
+    hudDirty = true;
+    window.requestAnimationFrame(function () { hudDirty = false; renderHud(); });
+  }
+
+  /* Keeps the HUD honest once the smashing stops: the rolling window has to
+     be re-measured on a timer, nothing else repaints it. */
+  var decayTimer = 0;
+  function stopDecay() {
+    if (decayTimer) { window.clearInterval(decayTimer); decayTimer = 0; }
+  }
+  function ensureDecay() {
+    if (decayTimer) { return; }
+    decayTimer = window.setInterval(function () {
+      var level = pruneCombo(Date.now());
+      if (level !== state.combo) { state.combo = level; scheduleHud(); }
+      if (level === 0) { stopDecay(); }
+    }, COMBO_DECAY_MS);
+  }
+
+  function registerPress(key) {
+    var now = Date.now();
+    stats.total++;
+    state.total = stats.total;
+    stats.unique[key] = 1;
+    stats.perKey[key] = (stats.perKey[key] || 0) + 1;
+    /* prune first so an emptied window can re-arm the milestone ladder */
+    pruneCombo(now);
+    comboTimes.push(now);
+    var level = comboTimes.length;
+    state.combo = level;
+    ensureDecay();
+    if (level > stats.maxCombo) { stats.maxCombo = level; }
+    while (milestoneIdx < MILESTONES.length && level >= MILESTONES[milestoneIdx]) {
+      milestoneIdx++;
+      engine.combo(level);
+      audio.celebrate();
+    }
+    scheduleHud();
+    return level;
+  }
+
+  function keyLabel(key) {
+    if (key === ' ') { return 'Space'; }
+    if (key.length === 1) { return key.toUpperCase(); }
+    return key;
+  }
+
+  function chaosTitle(total) {
+    var title = CHAOS[0].title;
+    for (var i = 0; i < CHAOS.length; i++) {
+      if (total >= CHAOS[i].min) { title = CHAOS[i].title; }
+    }
+    return title;
+  }
+
+  function renderReport() {
+    var minutes = (Date.now() - stats.startedAt) / 60000;
+    el.repTotal.textContent = String(stats.total);
+    el.repMinutes.textContent = minutes < 1 ? minutes.toFixed(1) : String(Math.round(minutes));
+    el.repUnique.textContent = String(Object.keys(stats.unique).length);
+    el.repCombo.textContent = String(stats.maxCombo);
+    var keys = Object.keys(stats.perKey);
+    keys.sort(function (a, b) { return stats.perKey[b] - stats.perKey[a]; });
+    var top = [];
+    for (var i = 0; i < keys.length && i < 3; i++) {
+      top.push(keyLabel(keys[i]) + ' ×' + stats.perKey[keys[i]]);
+    }
+    el.repFav.textContent = top.length ? top.join(' · ') : '—';
+    el.repChaos.textContent = chaosTitle(stats.total);
+  }
+
+  /* ---------------- parent gate ---------------- */
+  var gateIdx = 0;
+
+  function generateCode() {
+    var digits = '';
+    var rnd = new Array(CODE_LENGTH);
+    if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+      var buf = new Uint8Array(CODE_LENGTH);
+      window.crypto.getRandomValues(buf);
+      for (var i = 0; i < CODE_LENGTH; i++) { rnd[i] = buf[i] % 10; }
+    } else {
+      for (var j = 0; j < CODE_LENGTH; j++) { rnd[j] = Math.floor(Math.random() * 10); }
+    }
+    for (var k = 0; k < CODE_LENGTH; k++) { digits += String(rnd[k]); }
+    state.code = digits;
+    gateIdx = 0;
+    var spaced = digits.split('').join(' ');
+    el.badgeCode.textContent = spaced;
+    el.keypadCode.textContent = spaced;
+    renderGateDots();
+  }
+
+  function renderGateDots() {
+    var dots = el.gateDots.children;
+    for (var i = 0; i < dots.length; i++) {
+      if (i < gateIdx) { dots[i].classList.add('on'); } else { dots[i].classList.remove('on'); }
+    }
+  }
+
+  /* true when the character just fed was part of the code, so the shell can
+     keep the parent's own unlock taps out of the baby's Smash Report */
+  var gateHit = false;
+
+  /* strictly consecutive: any wrong key resets to 0 (or 1 when it is the first digit) */
+  function gateFeed(ch) {
+    gateHit = false;
+    if (!state.code) { return false; }
+    if (ch === state.code.charAt(gateIdx)) { gateIdx++; gateHit = true; }
+    else {
+      gateIdx = (ch === state.code.charAt(0)) ? 1 : 0;
+      gateHit = gateIdx === 1;
+    }
+    renderGateDots();
+    if (gateIdx >= CODE_LENGTH) { gateIdx = 0; renderGateDots(); return true; }
+    return false;
+  }
+
+  /* An accidental hold (a resting palm on a tablet) must not park the game
+     behind the keypad forever, so an untouched gate closes itself. */
+  var gateIdleTimer = 0;
+  function armGateIdle() {
+    if (gateIdleTimer) { window.clearTimeout(gateIdleTimer); }
+    gateIdleTimer = window.setTimeout(function () {
+      gateIdleTimer = 0;
+      if (state.name === 'playing') { closeGate(); }
+    }, GATE_IDLE_MS);
+  }
+
+  function openGate() {
+    gateIdx = 0;
+    renderGateDots();
+    body.setAttribute('data-gate', 'open');
+    armGateIdle();
+  }
+  function closeGate() {
+    if (gateIdleTimer) { window.clearTimeout(gateIdleTimer); gateIdleTimer = 0; }
+    body.removeAttribute('data-gate');
+    gateIdx = 0;
+    renderGateDots();
+  }
+
+  function enterUnlocked() {
+    closeGate();
+    renderReport();
+    /* keyboard lock and fullscreen stay engaged on purpose */
+    setState('unlocked');
+  }
+
+  /* badge reveal on pointer proximity */
+  var badgeNear = false;
+  function setBadgeNear(on) {
+    if (badgeNear === on) { return; }
+    badgeNear = on;
+    el.badge.classList.toggle('is-near', on);
+  }
+  /* The badge is fixed and constant-sized, so its box is measured once per
+     layout change instead of on every pointer sample (a rect read mid-frame
+     forces a layout flush of the glyphs the engine is animating). */
+  var badgeRect = null;
+  function updateBadgeProximity(x, y) {
+    if (state.name !== 'playing') { return; }
+    if (!badgeRect || !badgeRect.width) { badgeRect = el.badge.getBoundingClientRect(); }
+    var cx = badgeRect.left + badgeRect.width / 2;
+    var cy = badgeRect.top + badgeRect.height / 2;
+    var dx = x - cx;
+    var dy = y - cy;
+    setBadgeNear((dx * dx + dy * dy) < (BADGE_NEAR_PX * BADGE_NEAR_PX));
+  }
+  window.addEventListener('resize', function () { badgeRect = null; });
+
+  /* cursor comes back while the pointer moves, hides again once it rests */
+  var cursorTimer = 0;
+  function showCursor() {
+    if (body.getAttribute('data-pointer') !== '1') { body.setAttribute('data-pointer', '1'); }
+    if (cursorTimer) { window.clearTimeout(cursorTimer); }
+    cursorTimer = window.setTimeout(function () {
+      cursorTimer = 0;
+      body.removeAttribute('data-pointer');
+    }, CURSOR_IDLE_MS);
+  }
+
+  var revealTimer = 0;
+  function flashBadge() {
+    el.badge.classList.add('is-reveal');
+    if (revealTimer) { window.clearTimeout(revealTimer); }
+    revealTimer = window.setTimeout(function () {
+      el.badge.classList.remove('is-reveal');
+      revealTimer = 0;
+    }, BADGE_REVEAL_MS);
+  }
+
+  /* press-and-hold on the badge -> keypad (survives pointerleave) */
+  var holdTimer = 0;
+  var holdPointerId = -1;
+  function startHold(e) {
+    if (state.name !== 'playing' || holdTimer) { return; }
+    holdPointerId = typeof e.pointerId === 'number' ? e.pointerId : -1;
+    if (holdPointerId >= 0 && typeof el.badge.setPointerCapture === 'function') {
+      try { el.badge.setPointerCapture(holdPointerId); } catch (err) { /* capture optional */ }
+    }
+    el.badge.classList.add('is-holding');
+    holdTimer = window.setTimeout(function () {
+      holdTimer = 0;
+      el.badge.classList.remove('is-holding');
+      openGate();
+    }, HOLD_MS);
+  }
+  function cancelHold() {
+    if (holdTimer) { window.clearTimeout(holdTimer); holdTimer = 0; }
+    el.badge.classList.remove('is-holding');
+    if (holdPointerId >= 0 && typeof el.badge.releasePointerCapture === 'function') {
+      try { el.badge.releasePointerCapture(holdPointerId); } catch (err) { /* already released */ }
+    }
+    holdPointerId = -1;
+  }
+
+  el.badge.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    startHold(e);
+  });
+  el.badge.addEventListener('pointerup', function (e) { e.preventDefault(); cancelHold(); });
+  el.badge.addEventListener('pointercancel', function () { cancelHold(); });
+  el.badge.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  /* ---------------- play routing ---------------- */
+  /* count === false replays the key for the child's senses without adding it
+     to the Smash Report (used while a parent is typing the unlock code) */
+  function playKey(e, count) {
+    var key = e.key;
+    if (typeof key !== 'string' || key.length === 0) { return; }
+    var isLetter = key.length === 1 && /[a-zA-Z]/.test(key);
+    var isDigit = key.length === 1 && key >= '0' && key <= '9';
+    /* one physical key = one stat entry, shifted or not */
+    var id = key.length === 1 ? key.toUpperCase() : key;
+    var level = count === false ? state.combo : registerPress(id);
+    var info = {
+      key: key,
+      code: e.code || '',
+      isLetter: isLetter,
+      isDigit: isDigit,
+      comboLevel: level
+    };
+    engine.onKey(info);
+    audio.onKey(info);
+    if (isLetter || isDigit) { audio.speak(key.toUpperCase()); }
+  }
+
+  /* ---------------- input blocking (belt and braces) ---------------- */
+  /* While the parent panel is up the browser stays muzzled, but the panel's
+     own buttons must remain operable without a pointer. */
+  function panelKeyAllowed(e) {
+    if (state.name !== 'unlocked') { return false; }
+    var key = e.key;
+    if (key === 'Tab') { return true; }
+    if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
+      var active = doc.activeElement;
+      return !!(active && el.unlock && el.unlock.contains(active));
+    }
+    return false;
+  }
+
+  function onKeyDown(e) {
+    if (state.name === 'idle') { return; }
+    if (panelKeyAllowed(e)) { return; }
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (state.name === 'relock-pending') {
+      /* the code still works here, so a browser that can never grant
+         fullscreen can never trap a parent behind this overlay */
+      if (!e.repeat && gateFeed(e.key)) { enterUnlocked(); return; }
+      attemptRelock(grantsActivation(e));
+      return;
+    }
+    if (state.name === 'unlocked') { return; }   /* overlay ignores keys, browser stays muzzled */
+    if (e.repeat) { return; }                    /* still prevented, but no visuals or audio */
+
+    /* the on-screen keypad owns the code while it is open: baby keystrokes
+       must not keep resetting the progress the parent is making with it */
+    if (body.getAttribute('data-gate') === 'open') { return; }
+
+    if (gateFeed(e.key)) { enterUnlocked(); return; }
+    playKey(e, !gateHit);
+  }
+
+  window.addEventListener('keydown', onKeyDown, { capture: true });
+  window.addEventListener('keyup', function (e) {
+    if (state.name === 'idle' || panelKeyAllowed(e)) { return; }
+    e.preventDefault();
+    e.stopPropagation();
+  }, { capture: true });
+  window.addEventListener('keypress', function (e) {
+    if (state.name === 'idle' || panelKeyAllowed(e)) { return; }
+    e.preventDefault();
+  }, { capture: true });
+
+  window.addEventListener('contextmenu', function (e) {
+    if (state.name !== 'idle') { e.preventDefault(); }
+  }, { capture: true });
+
+  window.addEventListener('wheel', function (e) {
+    if (state.name === 'idle') { return; }
+    if (e.ctrlKey) { e.preventDefault(); }        /* pinch / ctrl zoom */
+  }, { capture: true, passive: false });
+
+  window.addEventListener('selectstart', function (e) {
+    if (state.name !== 'idle') { e.preventDefault(); }
+  }, { capture: true });
+  window.addEventListener('dragstart', function (e) { e.preventDefault(); }, { capture: true });
+  window.addEventListener('auxclick', function (e) {
+    if (state.name !== 'idle') { e.preventDefault(); }
+  }, { capture: true });
+  window.addEventListener('gesturestart', function (e) {
+    if (state.name !== 'idle') { e.preventDefault(); }
+  }, { capture: true });
+
+  window.addEventListener('beforeunload', function (e) {
+    if (state.name === 'idle') { return undefined; }
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  });
+
+  /* ---------------- pointer routing ---------------- */
+  var lastMoveAt = 0;
+
+  /* true when the pointer landed on shell chrome rather than the play area */
+  function inUI(node) {
+    if (!node) { return false; }
+    if (el.badge.contains(node)) { return true; }
+    if (typeof node.closest === 'function') { return !!node.closest('.overlay'); }
+    return false;
+  }
+
+  window.addEventListener('pointerdown', function (e) {
+    if (state.name === 'relock-pending') {
+      /* touch and pen only gain transient activation at pointerup, and an
+         in-flight doomed attempt would swallow it - mouse relocks here */
+      if (e.pointerType === 'mouse') { attemptRelock(true); }
+      return;
+    }
+    if (state.name !== 'playing') { return; }
+    if (inUI(e.target)) { return; }
+    audio.init();
+    engine.onPointerDown(e.clientX, e.clientY);
+    var w = window.innerWidth || 1;
+    var h = window.innerHeight || 1;
+    audio.onPointer(e.clientX / w, e.clientY / h);
+  }, { capture: true });
+
+  window.addEventListener('pointerup', function (e) {
+    if (state.name === 'relock-pending' && e.pointerType !== 'mouse') { attemptRelock(true); }
+  }, { capture: true });
+
+  window.addEventListener('pointermove', function (e) {
+    if (state.name !== 'playing' || body.getAttribute('data-gate') === 'open') { return; }
+    var now = Date.now();
+    if (now - lastMoveAt < POINTER_MOVE_MS) { return; }
+    lastMoveAt = now;
+    showCursor();
+    updateBadgeProximity(e.clientX, e.clientY);
+    engine.onPointerMove(e.clientX, e.clientY);
+  }, { capture: true, passive: true });
+
+  el.stage.addEventListener('touchmove', function (e) {
+    if (state.name !== 'idle') { e.preventDefault(); }
+  }, { passive: false });
+
+  /* ---------------- relock flow ---------------- */
+  var relocking = false;
+  var relockFails = 0;
+  var relockReturn = 'playing';
+
+  /* Losing fullscreen releases the keyboard lock with it, so every play-like
+     state (including 'unlocked', where the report is on screen) has to fall
+     back to the relock overlay and come back to where it left off. */
+  function beginRelock() {
+    if (state.name === 'relock-pending') { return; }
+    relockReturn = state.name === 'unlocked' ? 'unlocked' : 'playing';
+    relockFails = 0;
+    state.lockAPI = false;
+    setState('relock-pending');
+  }
+
+  function relockReturnState() {
+    if (relockReturn === 'unlocked') {
+      renderReport();
+      setState('unlocked');
+    } else {
+      setState('playing');
+      flashBadge();
+    }
+  }
+
+  function attemptRelock(countFailure) {
+    if (relocking) { return; }
+    relocking = true;
+    audio.init();
+    engageLock().then(function () {
+      relocking = false;
+      state.fullscreen = isFullscreen();
+      if (state.name !== 'relock-pending') { return; }
+      /* fullscreen can be lost again between the grant and this microtask -
+         leaving the pending state then would strand the machine with no
+         overlay and no further fullscreenchange to correct it */
+      if (!state.fullscreen && canFullscreen) { return; }
+      relockFails = 0;
+      pushTrap();
+      relockReturnState();
+    }, function () {
+      /* Rejected - overlay stays, next input retries. When fullscreen is
+         offered but always refused (iframe without allowfullscreen, a
+         fullscreen Permissions-Policy denial), degrade to in-page play
+         instead of eating every keypress forever. Only attempts triggered by
+         activation-granting input may count toward that: Chrome grants no
+         transient activation for Escape, key repeats or bare modifiers, so
+         an Esc-hold escape would otherwise burn the three strikes in
+         milliseconds and drop the lock at the worst possible moment. */
+      relocking = false;
+      if (countFailure) { relockFails += 1; }
+      if (relockFails >= 3 && state.name === 'relock-pending') {
+        relockFails = 0;
+        relockReturnState();
+      }
+    });
+  }
+
+  var MODIFIER_KEYS = ['Shift', 'Control', 'Alt', 'Meta', 'AltGraph', 'CapsLock', 'NumLock', 'ScrollLock'];
+  function grantsActivation(e) {
+    return !e.repeat && e.key !== 'Escape' && MODIFIER_KEYS.indexOf(e.key) === -1;
+  }
+
+  function onFullscreenChange() {
+    state.fullscreen = isFullscreen();
+    badgeRect = null;
+    if (!state.fullscreen && isPlayLike()) { beginRelock(); }
+  }
+  doc.addEventListener('fullscreenchange', onFullscreenChange);
+  doc.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+  doc.addEventListener('visibilitychange', function () {
+    if (doc.visibilityState !== 'visible') { return; }
+    /* only resume audio for a session that has already had a gesture */
+    if (state.name !== 'idle') { audio.init(); }
+    state.fullscreen = isFullscreen();
+    if (!state.fullscreen && canFullscreen && isPlayLike()) { beginRelock(); }
+  });
+
+  /* ---------------- start / resume / exit ---------------- */
+  function startPlay() {
+    audio.init();
+    relockFails = 0;
+    engine.init(el.canvas, el.stage);
+    applySettings(false);
+    generateCode();
+    resetStats();
+    pushTrap();
+    engageLock().then(function () {
+      if (state.name !== 'idle') { return; }
+      state.fullscreen = isFullscreen();
+      setState('playing');
+      flashBadge();
+    }, function () {
+      /* Refused this time: the overlay asks for the next gesture. Never
+         offered at all: play in the page rather than wait for a lock that
+         can never arrive. */
+      if (state.name !== 'idle') { return; }
+      state.fullscreen = isFullscreen();
+      relockReturn = 'playing';
+      setState(state.fullscreen || !canFullscreen ? 'playing' : 'relock-pending');
+      flashBadge();
+    });
+  }
+
+  function resumePlay() {
+    closeGate();
+    audio.init();
+    relockFails = 0;
+    relockReturn = 'playing';
+    engageLock().then(function () {
+      /* Exit may have torn the session down while the promise was pending -
+         resurrecting 'playing' from here would re-arm a dead session */
+      if (state.name !== 'unlocked') { return; }
+      state.fullscreen = isFullscreen();
+      pushTrap();
+      setState('playing');
+      flashBadge();
+    }, function () {
+      if (state.name !== 'unlocked') { return; }
+      state.fullscreen = isFullscreen();
+      setState(state.fullscreen || !canFullscreen ? 'playing' : 'relock-pending');
+      flashBadge();
+    });
+  }
+
+  function exitPlay() {
+    closeGate();
+    cancelHold();
+    relockFails = 0;
+    unlockKeyboard();
+    historyTrapped = false;
+    if (trapPending) { window.clearTimeout(trapPending); trapPending = 0; }
+    exitFullscreen().then(function () { state.fullscreen = isFullscreen(); });
+    setState('idle');
+  }
+
+  el.startBtn.addEventListener('click', startPlay);
+  el.resumeBtn.addEventListener('click', resumePlay);
+  el.exitBtn.addEventListener('click', exitPlay);
+  el.gateCancel.addEventListener('click', function () { closeGate(); });
+
+  el.keypad.addEventListener('click', function (e) {
+    /* a gate left over from another state must never unlock a machine that
+       is no longer fullscreen or keyboard-locked */
+    if (state.name !== 'playing' || body.getAttribute('data-gate') !== 'open') { return; }
+    var target = e.target;
+    if (!target || typeof target.getAttribute !== 'function') { return; }
+    var digit = target.getAttribute('data-digit');
+    if (digit === null) { return; }
+    armGateIdle();
+    if (gateFeed(digit)) { enterUnlocked(); }
+  });
+
+  /* ---------------- settings controls ---------------- */
+  function toggle(name, node) {
+    node.addEventListener('click', function () {
+      settings[name] = !settings[name];
+      applySettings(true);
+    });
+  }
+  toggle('sound', el.setSound);
+  toggle('speech', el.setSpeech);
+  toggle('reducedMotion', el.setMotion);
+
+  el.themePicker.addEventListener('click', function (e) {
+    var target = e.target;
+    if (!target || typeof target.getAttribute !== 'function') { return; }
+    var name = target.getAttribute('data-theme');
+    if (!name || THEMES.indexOf(name) === -1) { return; }
+    settings.theme = name;
+    applySettings(true);
+  });
+
+  /* ---------------- capability note ---------------- */
+  function isSecure() {
+    return typeof window.isSecureContext === 'boolean' ? window.isSecureContext : true;
+  }
+
+  function describeCapabilities() {
+    if (hasKeyboardLock() && canFullscreen) {
+      return 'This browser supports <b>full keyboard lock</b>: Esc, Tab, Alt+Tab, the Windows/Command key and F1&ndash;F12 are all captured while playing. Holding Esc for two seconds is the one built-in way out, and it re-locks instantly.';
+    }
+    if (canFullscreen && !isSecure()) {
+      return 'Keyboard lock is unavailable here. It needs a Chromium browser (Chrome or Edge) <b>and</b> a secure page &mdash; this one came over an insecure connection, so open the file directly or serve it over HTTPS or localhost. Fullscreen still works, and auto-relock catches Esc on the very next key or tap.';
+    }
+    if (canFullscreen) {
+      return 'This browser has <b>fullscreen but not keyboard lock</b> (that needs Chrome, Edge or another Chromium browser). Esc will leave fullscreen, but auto-relock catches it on the very next key or tap.';
+    }
+    return 'This browser could not offer fullscreen, so play runs in the page. Input is still captured, but a determined toddler can reach the browser chrome &mdash; use Chrome or Edge for the full lock.';
+  }
+
+  /* ---------------- boot ---------------- */
+  loadSettings();
+  applySettings(false);
+  el.capNote.innerHTML = describeCapabilities();
+  state.fullscreen = isFullscreen();
+  setState('idle');
+}());
+</script>
+</body>
+</html>
