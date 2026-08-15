@@ -1,4 +1,4 @@
-# TinyFingers Deluxe
+# KeySplash
 
 A keyboard-smashing game for babies and toddlers — with a **real lock mode**. One self-contained `index.html`: no server, no build step, no external assets, no analytics, no network requests at all.
 

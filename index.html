@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="color-scheme" content="dark">
-<meta name="description" content="TinyFingers Deluxe - a safe, lockable keyboard-smashing playground for babies and toddlers.">
-<title>TinyFingers Deluxe</title>
+<meta name="description" content="KeySplash - a safe, lockable keyboard-smashing playground for babies and toddlers.">
+<title>KeySplash</title>
 <style>
 /* ============================================================
-   TinyFingers Deluxe - stylesheet
+   KeySplash - stylesheet
    1. Design tokens
    2. Theme palettes  (body[data-theme])
-   3. Base / stage / canvas layers
+   3. Base / aurora backdrop / stage layers
    4. Shell keyframes
    5. HUD
    6. Overlays (start, relock, unlock) + parent badge
@@ -24,81 +24,151 @@
 :root {
   --tf-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
   --tf-font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", system-ui, sans-serif;
+  --tf-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
-  --tf-radius-sm: 12px;
-  --tf-radius: 20px;
-  --tf-radius-lg: 32px;
+  --tf-radius-xs: 10px;
+  --tf-radius-sm: 14px;
+  --tf-radius: 18px;
+  --tf-radius-lg: 26px;
+  --tf-radius-xl: 34px;
   --tf-radius-pill: 999px;
 
   --tf-space-1: 4px;
   --tf-space-2: 8px;
-  --tf-space-3: 14px;
-  --tf-space-4: 22px;
-  --tf-space-5: 34px;
+  --tf-space-3: 13px;
+  --tf-space-4: 20px;
+  --tf-space-5: 30px;
+  --tf-space-6: 44px;
 
-  --tf-text-sm: clamp(12px, 1.6vmin, 15px);
-  --tf-text-md: clamp(15px, 2.1vmin, 19px);
-  --tf-text-lg: clamp(20px, 3.2vmin, 30px);
-  --tf-text-xl: clamp(28px, 5.4vmin, 58px);
+  --tf-text-xs: clamp(11px, 1.25vmin, 12.5px);
+  --tf-text-sm: clamp(13px, 1.5vmin, 15px);
+  --tf-text-md: clamp(15px, 1.85vmin, 17.5px);
+  --tf-text-lg: clamp(18px, 2.3vmin, 22px);
+  --tf-text-xl: clamp(24px, 3.2vmin, 32px);
+  --tf-text-hero: clamp(2.4rem, 5.6vw, 4rem);
 
   --tf-ease-pop: cubic-bezier(0.22, 1.4, 0.36, 1);
   --tf-ease-out: cubic-bezier(0.2, 0.7, 0.3, 1);
-  --tf-dur-ui: 180ms;
+  --tf-dur-ui: 200ms;
 
-  --tf-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
-  --tf-ring: 0 0 0 3px rgba(255, 255, 255, 0.85);
+  --tf-hairline: rgba(255, 255, 255, 0.14);
+  --tf-hairline-soft: rgba(255, 255, 255, 0.08);
+  --tf-hairline-strong: rgba(255, 255, 255, 0.22);
 
-  --tf-scrim: rgba(6, 4, 18, 0.72);
-  --tf-scrim-solid: #07040f;
+  --tf-shadow-sm: 0 4px 16px -6px rgba(0, 0, 0, 0.6);
+  --tf-shadow: 0 32px 80px -28px rgba(0, 0, 0, 0.9), 0 2px 8px -4px rgba(0, 0, 0, 0.6);
+  --tf-inner-top: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+
+  --tf-blur: blur(26px) saturate(165%);
+  --tf-blur-sm: blur(16px) saturate(150%);
 }
 
 /* ---------- 2. Theme palettes ----------
    Every theme exposes the same contract:
-   --tf-bg-a/b/c   background gradient stops
+   --tf-bg-a/b/c        background base tones
+   --tf-au-1 .. --tf-au-4   aurora mesh hues (translucent)
    --tf-p1 .. --tf-p8   bright palette (canvas particles + glyph colors)
-   --tf-accent     primary UI accent
-   --tf-ink        foreground text
-   --tf-panel / --tf-panel-2 / --tf-line   surfaces
+   --tf-accent / --tf-accent-2   UI accents
+   --tf-ink / --tf-ink-dim       foreground text
+   --tf-panel-solid / --tf-panel-glass  surface fallback + glass
 ------------------------------------------ */
 body[data-theme="space"] {
-  --tf-bg-a: #06031a; --tf-bg-b: #1b0b3a; --tf-bg-c: #2f0b4f;
-  --tf-p1: #7cf9ff; --tf-p2: #a78bfa; --tf-p3: #f472b6; --tf-p4: #fbbf24;
-  --tf-p5: #34d399; --tf-p6: #60a5fa; --tf-p7: #fb7185; --tf-p8: #e879f9;
-  --tf-accent: #a78bfa;
-  --tf-ink: #f4f1ff;
-  --tf-panel: rgba(28, 16, 58, 0.94);
-  --tf-panel-2: rgba(255, 255, 255, 0.07);
-  --tf-line: rgba(167, 139, 250, 0.34);
+  --tf-bg-a: #06050f; --tf-bg-b: #0e0a24; --tf-bg-c: #171038;
+  --tf-au-1: rgba(109, 74, 255, 0.55);
+  --tf-au-2: rgba(38, 128, 255, 0.40);
+  --tf-au-3: rgba(236, 72, 153, 0.28);
+  --tf-au-4: rgba(45, 212, 191, 0.20);
+  --tf-p1: #7DE3FF; --tf-p2: #A78BFA; --tf-p3: #FF7FD4; --tf-p4: #FFD166;
+  --tf-p5: #5EEAD4; --tf-p6: #7CA8FF; --tf-p7: #FF9E7A; --tf-p8: #FFFFFF;
+  --tf-accent: #b3a4ff;
+  --tf-grad-mid: #FF7FD4;
+  --tf-accent-2: #7de3ff;
+  --tf-ink: #f3f1ff;
+  --tf-ink-dim: #b9b3d6;
+  --tf-on-accent: #120a26;
+  --tf-panel-solid: #120e26;
+  --tf-panel-glass: rgba(26, 20, 52, 0.62);
+  --tf-line: rgba(179, 164, 255, 0.20);
+  --tf-scrim: rgba(6, 5, 15, 0.68);
+  --tf-scrim-solid: #06050f;
 }
 body[data-theme="ocean"] {
-  --tf-bg-a: #00121f; --tf-bg-b: #003653; --tf-bg-c: #005f73;
-  --tf-p1: #7dd3fc; --tf-p2: #22d3ee; --tf-p3: #2dd4bf; --tf-p4: #a7f3d0;
-  --tf-p5: #fde68a; --tf-p6: #fb7185; --tf-p7: #c4b5fd; --tf-p8: #38bdf8;
-  --tf-accent: #22d3ee;
-  --tf-ink: #eafcff;
-  --tf-panel: rgba(3, 42, 62, 0.94);
-  --tf-panel-2: rgba(255, 255, 255, 0.08);
-  --tf-line: rgba(34, 211, 238, 0.34);
+  --tf-bg-a: #03101a; --tf-bg-b: #052232; --tf-bg-c: #073246;
+  --tf-au-1: rgba(14, 165, 233, 0.45);
+  --tf-au-2: rgba(20, 184, 166, 0.40);
+  --tf-au-3: rgba(59, 130, 246, 0.34);
+  --tf-au-4: rgba(250, 204, 21, 0.14);
+  --tf-p1: #58D8FF; --tf-p2: #4FE3CC; --tf-p3: #9BF6FF; --tf-p4: #FFD98A;
+  --tf-p5: #FF9BB8; --tf-p6: #86B3FF; --tf-p7: #C9FFEE; --tf-p8: #FFFFFF;
+  --tf-accent: #6fe3f5;
+  --tf-grad-mid: #7EA8FF;
+  --tf-accent-2: #7dffd8;
+  --tf-ink: #eaf9ff;
+  --tf-ink-dim: #a5c6d6;
+  --tf-on-accent: #032029;
+  --tf-panel-solid: #08202e;
+  --tf-panel-glass: rgba(9, 40, 58, 0.62);
+  --tf-line: rgba(111, 227, 245, 0.20);
+  --tf-scrim: rgba(3, 12, 20, 0.68);
+  --tf-scrim-solid: #03101a;
 }
 body[data-theme="garden"] {
-  --tf-bg-a: #08190d; --tf-bg-b: #14401f; --tf-bg-c: #266b32;
-  --tf-p1: #86efac; --tf-p2: #fde047; --tf-p3: #fca5a5; --tf-p4: #f9a8d4;
-  --tf-p5: #bef264; --tf-p6: #fdba74; --tf-p7: #a5f3fc; --tf-p8: #d8b4fe;
-  --tf-accent: #bef264;
-  --tf-ink: #f2ffef;
-  --tf-panel: rgba(13, 45, 22, 0.94);
-  --tf-panel-2: rgba(255, 255, 255, 0.08);
-  --tf-line: rgba(190, 242, 100, 0.32);
+  --tf-bg-a: #06120c; --tf-bg-b: #0b2415; --tf-bg-c: #10351f;
+  --tf-au-1: rgba(34, 197, 94, 0.42);
+  --tf-au-2: rgba(163, 230, 53, 0.30);
+  --tf-au-3: rgba(20, 184, 166, 0.30);
+  --tf-au-4: rgba(244, 114, 182, 0.18);
+  --tf-p1: #FFE27A; --tf-p2: #96EFA6; --tf-p3: #FFA6DA; --tf-p4: #FFC07A;
+  --tf-p5: #A9DBFF; --tf-p6: #DCFB9C; --tf-p7: #FF9090; --tf-p8: #FFFFFF;
+  --tf-accent: #bdf07a;
+  --tf-grad-mid: #FFE27A;
+  --tf-accent-2: #8ef0b6;
+  --tf-ink: #f1fdef;
+  --tf-ink-dim: #aec9b1;
+  --tf-on-accent: #0a2011;
+  --tf-panel-solid: #0b2313;
+  --tf-panel-glass: rgba(14, 43, 25, 0.62);
+  --tf-line: rgba(189, 240, 122, 0.20);
+  --tf-scrim: rgba(4, 14, 9, 0.68);
+  --tf-scrim-solid: #06120c;
 }
 body[data-theme="candy"] {
-  --tf-bg-a: #24071a; --tf-bg-b: #4c0f33; --tf-bg-c: #85164c;
-  --tf-p1: #ffd1e8; --tf-p2: #ffa8d5; --tf-p3: #ffe08a; --tf-p4: #a0f0ff;
-  --tf-p5: #c3a6ff; --tf-p6: #ff9b8a; --tf-p7: #9df7c4; --tf-p8: #ffc7f0;
-  --tf-accent: #ffa8d5;
-  --tf-ink: #fff3fa;
-  --tf-panel: rgba(60, 10, 40, 0.94);
-  --tf-panel-2: rgba(255, 255, 255, 0.09);
-  --tf-line: rgba(255, 168, 213, 0.34);
+  --tf-bg-a: #130610; --tf-bg-b: #2a0a20; --tf-bg-c: #3d0f2d;
+  --tf-au-1: rgba(236, 72, 153, 0.45);
+  --tf-au-2: rgba(168, 85, 247, 0.38);
+  --tf-au-3: rgba(251, 146, 60, 0.24);
+  --tf-au-4: rgba(56, 189, 248, 0.20);
+  --tf-p1: #FF7FBE; --tf-p2: #FFDD5C; --tf-p3: #86EBFF; --tf-p4: #C0A2FF;
+  --tf-p5: #FFAE85; --tf-p6: #A8FF9C; --tf-p7: #FF7189; --tf-p8: #FFFFFF;
+  --tf-accent: #ffa3d0;
+  --tf-grad-mid: #C0A2FF;
+  --tf-accent-2: #ffd98a;
+  --tf-ink: #fff2f9;
+  --tf-ink-dim: #d6afc5;
+  --tf-on-accent: #2a0518;
+  --tf-panel-solid: #21091a;
+  --tf-panel-glass: rgba(51, 15, 39, 0.62);
+  --tf-line: rgba(255, 163, 208, 0.20);
+  --tf-scrim: rgba(14, 5, 11, 0.68);
+  --tf-scrim-solid: #130610;
+}
+
+/* Surface tokens resolve on <body> so the per-theme values above are in scope.
+   Default to opaque fallbacks; upgrade to glass only where blur is supported. */
+body {
+  --tf-surface: var(--tf-panel-solid);
+  --tf-surface-2: rgba(255, 255, 255, 0.05);
+  --tf-surface-3: rgba(12, 10, 22, 0.82);
+  /* the badge sits over arbitrary game colour and must stay legible, so its
+     tint is near-opaque even though it still blurs and catches a light edge */
+  --tf-surface-4: rgba(9, 7, 16, 0.93);
+  --tf-code-cell: rgba(255, 255, 255, 0.07);
+}
+@supports ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+  body {
+    --tf-surface: var(--tf-panel-glass);
+    --tf-surface-3: rgba(12, 10, 22, 0.55);
+  }
 }
 
 /* ---------- 3. Base ---------- */
@@ -113,14 +183,36 @@ html, body {
 body {
   font-family: var(--tf-font);
   color: var(--tf-ink);
-  background: var(--tf-bg-a);
-  background-image:
-    radial-gradient(120% 90% at 12% 8%, var(--tf-bg-c) 0%, transparent 58%),
-    radial-gradient(110% 85% at 88% 92%, var(--tf-bg-b) 0%, transparent 62%),
-    linear-gradient(160deg, var(--tf-bg-a) 0%, var(--tf-bg-b) 55%, var(--tf-bg-a) 100%);
+  background-color: var(--tf-bg-a);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  transition: background-color 600ms var(--tf-ease-out);
+  transition: background-color 700ms var(--tf-ease-out);
+}
+/* layered aurora / mesh glow - pure CSS, sits under every other layer */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -12%;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--tf-bg-a);
+  background-image:
+    radial-gradient(42% 38% at 16% 14%, var(--tf-au-1) 0%, transparent 68%),
+    radial-gradient(38% 34% at 84% 12%, var(--tf-au-2) 0%, transparent 70%),
+    radial-gradient(52% 46% at 74% 86%, var(--tf-au-3) 0%, transparent 70%),
+    radial-gradient(40% 36% at 22% 82%, var(--tf-au-4) 0%, transparent 72%),
+    linear-gradient(168deg, var(--tf-bg-b) 0%, var(--tf-bg-a) 46%, var(--tf-bg-c) 100%);
+  filter: blur(14px);
+  animation: tf-aurora 26s var(--tf-ease-out) infinite alternate;
+}
+/* a faint vignette keeps the panel edges readable over the glow */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(125% 105% at 50% 42%, transparent 44%, rgba(0, 0, 0, 0.38) 100%);
 }
 body, #stage {
   -webkit-user-select: none;
@@ -143,8 +235,10 @@ body[data-state="playing"] #parent-badge { cursor: pointer; }
 #stage {
   position: fixed;
   inset: 0;
+  z-index: 1;
   touch-action: none;
   contain: strict;
+  transition: opacity 420ms var(--tf-ease-out);
 }
 #fx-canvas,
 #glyph-layer,
@@ -164,73 +258,99 @@ body[data-state="playing"] #parent-badge { cursor: pointer; }
    Glyphs, ambient drifters and the combo flash are animated by TF.engine
    itself (inline styles, rAF and the Web Animations API), so the stylesheet
    only carries the animations the shell chrome uses.            */
+@keyframes tf-aurora {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(1.5%, -1.5%, 0) scale(1.06); }
+  100% { transform: translate3d(-1.5%, 1%, 0) scale(1.03); }
+}
 @keyframes tf-pulse {
   0%, 100% { transform: scale(1); }
   50%      { transform: scale(1.06); }
 }
 @keyframes tf-rise {
-  0%   { transform: translateY(18px) scale(0.96); opacity: 0; }
+  0%   { transform: translateY(14px) scale(0.985); opacity: 0; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 @keyframes tf-breathe {
-  0%, 100% { opacity: 0.85; }
+  0%, 100% { opacity: 0.7; }
   50%      { opacity: 1; }
 }
 
 /* ---------- 5. HUD ---------- */
 #hud {
   position: fixed;
-  top: max(14px, env(safe-area-inset-top));
+  top: max(16px, env(safe-area-inset-top));
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
   display: none;
-  flex-direction: column;
   align-items: center;
   gap: var(--tf-space-2);
   pointer-events: none;
-  padding: var(--tf-space-2) var(--tf-space-4);
+  max-width: calc(100vw - 24px);
+  transition: opacity 300ms var(--tf-ease-out);
+}
+.hud-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--tf-space-2);
+  padding: 9px var(--tf-space-4);
   border-radius: var(--tf-radius-pill);
-  background: rgba(0, 0, 0, 0.26);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: var(--tf-surface-3);
+  border: 1px solid var(--tf-hairline);
+  box-shadow: var(--tf-shadow-sm), var(--tf-inner-top);
+  backdrop-filter: var(--tf-blur-sm);
+  -webkit-backdrop-filter: var(--tf-blur-sm);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
 }
 #hud-count {
   font-size: var(--tf-text-lg);
-  font-weight: 900;
-  letter-spacing: 0.06em;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   color: var(--tf-ink);
-  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 #hud-count .hud-label {
-  font-size: 0.5em;
+  font-size: 0.56em;
   font-weight: 700;
-  opacity: 0.7;
+  color: rgba(255, 255, 255, 0.8);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  margin-left: 0.5em;
+  white-space: nowrap;
+}
+@media (max-width: 600px) {
+  #hud { flex-direction: column; }
+  #combo-meter { width: 150px; }
+}
+.hud-chip--combo { padding-right: var(--tf-space-3); }
+#combo-label {
+  font-size: var(--tf-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
+}
+#combo-label #combo-value {
+  color: var(--tf-ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  font-style: normal;
 }
 #combo-meter {
-  width: min(46vw, 340px);
-  height: 10px;
+  width: min(30vw, 190px);
+  height: 6px;
   border-radius: var(--tf-radius-pill);
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.13);
   overflow: hidden;
 }
 #combo-fill {
   height: 100%;
   width: 0%;
   border-radius: var(--tf-radius-pill);
-  background: linear-gradient(90deg, var(--tf-p1), var(--tf-p3), var(--tf-p4));
+  background: linear-gradient(90deg, var(--tf-p1), var(--tf-p3) 60%, var(--tf-p4));
   transition: width 180ms var(--tf-ease-out);
-}
-#combo-label {
-  font-size: var(--tf-text-sm);
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  opacity: 0.78;
 }
 
 /* ---------- 6. Overlays ---------- */
@@ -241,195 +361,329 @@ body[data-state="playing"] #parent-badge { cursor: pointer; }
   display: none;
   align-items: center;
   justify-content: center;
-  padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
+  padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
   overflow: auto;
   overscroll-behavior: contain;
 }
 .panel {
-  width: min(760px, 96vw);
-  padding: clamp(20px, 3.6vmin, 40px);
-  border-radius: var(--tf-radius-lg);
-  background: var(--tf-panel);
-  border: 1px solid var(--tf-line);
-  box-shadow: var(--tf-shadow);
-  animation: tf-rise 320ms var(--tf-ease-pop) both;
+  position: relative;
+  width: min(680px, 100%);
+  padding: clamp(22px, 3.4vmin, 40px);
+  border-radius: var(--tf-radius-xl);
+  background: var(--tf-surface);
+  border: 1px solid var(--tf-hairline);
+  box-shadow: var(--tf-shadow), var(--tf-inner-top);
+  backdrop-filter: var(--tf-blur);
+  -webkit-backdrop-filter: var(--tf-blur);
+  animation: tf-rise 340ms var(--tf-ease-pop) both;
 }
-.panel h1 {
-  margin: 0 0 var(--tf-space-2);
-  font-size: var(--tf-text-xl);
-  font-weight: 900;
-  letter-spacing: -0.01em;
-  line-height: 1.05;
-}
+.panel h1 { margin: 0; }
 .panel h2 {
-  margin: 0 0 var(--tf-space-2);
-  font-size: var(--tf-text-lg);
-  font-weight: 900;
-}
-.panel p { margin: 0 0 var(--tf-space-3); font-size: var(--tf-text-md); line-height: 1.5; opacity: 0.92; }
-.tagline { font-size: var(--tf-text-md); opacity: 0.8; }
-.section { margin-top: var(--tf-space-4); }
-.section-title {
-  font-size: var(--tf-text-sm);
+  margin: 0 0 var(--tf-space-3);
+  font-size: var(--tf-text-xl);
   font-weight: 800;
-  letter-spacing: 0.16em;
+  letter-spacing: -0.02em;
+}
+.panel p { margin: 0 0 var(--tf-space-3); font-size: var(--tf-text-md); line-height: 1.65; color: var(--tf-ink); }
+.lede { color: var(--tf-ink); opacity: 0.88; }
+.tagline {
+  font-size: var(--tf-text-md);
+  color: var(--tf-ink-dim);
+  line-height: 1.5;
+  margin: calc(var(--tf-space-2) * -1) 0 var(--tf-space-4);
+}
+.eyebrow {
+  font-size: var(--tf-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  opacity: 0.62;
-  margin-bottom: var(--tf-space-2);
+  color: var(--tf-accent);
+  margin-bottom: 6px;
+}
+.section { margin-top: var(--tf-space-5); }
+.section-title {
+  font-size: var(--tf-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--tf-ink-dim);
+  margin-bottom: var(--tf-space-3);
 }
 .notice {
   margin: 0;
-  padding: var(--tf-space-3);
+  padding: var(--tf-space-4);
   border-radius: var(--tf-radius);
-  background: var(--tf-panel-2);
-  border: 1px solid var(--tf-line);
+  background: var(--tf-surface-2);
+  border: 1px solid var(--tf-hairline-soft);
   font-size: var(--tf-text-sm);
-  line-height: 1.55;
+  line-height: 1.65;
+  color: var(--tf-ink);
 }
-.notice ul { margin: var(--tf-space-2) 0 0; padding-left: 1.15em; }
-.notice li { margin-bottom: var(--tf-space-1); }
-.notice b { color: var(--tf-accent); }
+.notice ul {
+  margin: var(--tf-space-4) 0 0;
+  padding: var(--tf-space-4) 0 0 1.1em;
+  border-top: 1px solid var(--tf-hairline-soft);
+}
+.notice li { margin-bottom: var(--tf-space-2); }
+.notice li:last-child { margin-bottom: 0; }
+.notice li::marker { color: var(--tf-accent); }
+.notice b { color: var(--tf-accent); font-weight: 700; }
+#cap-note { color: var(--tf-ink); opacity: 0.94; }
 
 /* Panels that can outgrow a short viewport are centred with auto margins
    instead of align-items, so overflow stays reachable by scrolling. */
 #start, #unlock { align-items: flex-start; }
 #start > .panel, #unlock > .panel { margin: auto; }
+/* the keypad gate is a narrow, focused card; the report is a wide one */
+body[data-gate="open"]:not([data-state="unlocked"]) #unlock > .panel { width: min(400px, 100%); }
 
 /* start screen */
-#start { background: linear-gradient(160deg, var(--tf-bg-a) 0%, var(--tf-bg-b) 60%, var(--tf-bg-a) 100%); }
+#start { background: linear-gradient(180deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.5)); }
 #start .panel { text-align: left; }
 .brand {
   display: flex;
   align-items: center;
-  gap: var(--tf-space-3);
-  margin-bottom: var(--tf-space-3);
+  gap: var(--tf-space-4);
+  margin-bottom: var(--tf-space-4);
+}
+@media (max-width: 520px) {
+  .brand { flex-direction: column; align-items: flex-start; gap: var(--tf-space-3); }
 }
 .brand-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: clamp(56px, 9vmin, 76px);
+  height: clamp(56px, 9vmin, 76px);
+  border-radius: var(--tf-radius);
+  background: var(--tf-surface-2);
+  border: 1px solid var(--tf-hairline);
+  box-shadow: var(--tf-inner-top);
   font-family: var(--tf-font-emoji);
-  font-size: clamp(34px, 7vmin, 64px);
+  font-size: clamp(28px, 4.6vmin, 40px);
   line-height: 1;
-  animation: tf-pulse 3.2s var(--tf-ease-out) infinite;
+  animation: tf-pulse 3.6s var(--tf-ease-out) infinite;
+}
+.logo {
+  font-size: var(--tf-text-hero);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  margin: 0 0 6px;
+  background-image: linear-gradient(96deg, var(--tf-ink) 4%, var(--tf-accent) 48%, var(--tf-accent-2) 96%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.foot-note {
+  margin: var(--tf-space-5) 0 0;
+  font-size: var(--tf-text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tf-ink-dim);
+  text-align: center;
 }
 
 /* relock overlay - fully opaque, covers everything */
 #relock {
-  background: var(--tf-scrim-solid);
-  background-image: linear-gradient(160deg, var(--tf-bg-b) 0%, var(--tf-bg-a) 70%);
+  background-color: var(--tf-scrim-solid);
+  background-image:
+    radial-gradient(60% 50% at 20% 15%, var(--tf-au-1) 0%, transparent 70%),
+    radial-gradient(60% 55% at 82% 85%, var(--tf-au-3) 0%, transparent 72%),
+    linear-gradient(168deg, var(--tf-bg-b) 0%, var(--tf-bg-a) 60%, var(--tf-bg-c) 100%);
   z-index: 70;
-  flex-direction: column;
-  gap: var(--tf-space-4);
   text-align: center;
+}
+.relock-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--tf-space-3);
+  padding: clamp(28px, 5vmin, 52px) clamp(24px, 5vmin, 60px);
+  border-radius: var(--tf-radius-xl);
+  background: var(--tf-surface);
+  border: 1px solid var(--tf-hairline);
+  box-shadow: var(--tf-shadow), var(--tf-inner-top);
+  backdrop-filter: var(--tf-blur);
+  -webkit-backdrop-filter: var(--tf-blur);
+  max-width: min(620px, 100%);
 }
 #relock .relock-mark {
   font-family: var(--tf-font-emoji);
-  font-size: clamp(60px, 16vmin, 150px);
+  font-size: clamp(56px, 13vmin, 118px);
   line-height: 1;
-  animation: tf-pulse 1.6s var(--tf-ease-out) infinite;
+  animation: tf-pulse 1.8s var(--tf-ease-out) infinite;
 }
 #relock .relock-title {
   font-size: var(--tf-text-xl);
   font-weight: 900;
+  letter-spacing: -0.02em;
   margin: 0;
 }
 #relock .relock-hint {
   font-size: var(--tf-text-md);
-  opacity: 0.82;
+  color: var(--tf-ink);
   margin: 0;
-  animation: tf-breathe 2s var(--tf-ease-out) infinite;
+  animation: tf-breathe 2.2s var(--tf-ease-out) infinite;
 }
 #relock .relock-parent {
   font-size: var(--tf-text-sm);
-  opacity: 0.55;
-  margin: 0;
+  color: var(--tf-ink-dim);
+  margin: var(--tf-space-2) 0 0;
+  max-width: 42ch;
+  line-height: 1.55;
 }
 
 /* unlock overlay */
-#unlock { background: var(--tf-scrim); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 80; }
+#unlock {
+  background: var(--tf-scrim);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  z-index: 80;
+}
 .report-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: var(--tf-space-3);
 }
 .stat {
   padding: var(--tf-space-3);
   border-radius: var(--tf-radius);
-  background: var(--tf-panel-2);
-  border: 1px solid var(--tf-line);
+  background: var(--tf-surface-2);
+  border: 1px solid var(--tf-hairline-soft);
+  box-shadow: var(--tf-inner-top);
 }
+.stat--wide { grid-column: 1 / -1; padding: var(--tf-space-3) var(--tf-space-4); }
 .stat-value {
-  font-size: var(--tf-text-lg);
-  font-weight: 900;
+  font-size: clamp(26px, 3.6vmin, 36px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
+  color: var(--tf-ink);
+  line-height: 1.05;
+}
+.stat--wide .stat-value {
+  font-size: clamp(20px, 2.6vmin, 26px);
+  letter-spacing: 0.02em;
   color: var(--tf-accent);
-  line-height: 1.1;
 }
 .stat-label {
-  margin-top: var(--tf-space-1);
-  font-size: var(--tf-text-sm);
-  opacity: 0.68;
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: var(--tf-ink-dim);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .chaos {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5em;
   margin-top: var(--tf-space-3);
-  padding: var(--tf-space-3) var(--tf-space-4);
+  padding: var(--tf-space-4);
   border-radius: var(--tf-radius);
-  background: linear-gradient(100deg, var(--tf-panel-2), transparent);
+  background-color: var(--tf-surface-2);
+  background-image: linear-gradient(100deg, rgba(255, 255, 255, 0.09), transparent 68%);
   border: 1px solid var(--tf-line);
   font-size: var(--tf-text-md);
-  font-weight: 800;
 }
-.chaos span { color: var(--tf-accent); }
+.chaos-label {
+  font-size: var(--tf-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tf-ink-dim);
+}
+.chaos span#rep-chaos { font-weight: 800; color: var(--tf-ink); letter-spacing: -0.01em; }
 
 /* parent badge */
 #parent-badge {
   position: fixed;
-  right: max(14px, env(safe-area-inset-right));
-  bottom: max(14px, env(safe-area-inset-bottom));
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
   z-index: 60;
   display: none;
   align-items: center;
   gap: var(--tf-space-2);
-  padding: var(--tf-space-2) var(--tf-space-3);
+  padding: 7px 12px 7px 9px;
   border-radius: var(--tf-radius-pill);
-  background: rgba(0, 0, 0, 0.42);
-  border: 1px solid var(--tf-line);
+  background: var(--tf-surface-4);
+  border: 1px solid var(--tf-hairline);
+  box-shadow: var(--tf-shadow-sm), var(--tf-inner-top);
+  backdrop-filter: var(--tf-blur-sm);
+  -webkit-backdrop-filter: var(--tf-blur-sm);
   color: var(--tf-ink);
   font-size: var(--tf-text-sm);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  opacity: 0.35;
-  transform: scale(0.92);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  opacity: 0.34;
+  transform: scale(0.94);
   transform-origin: 100% 100%;
   transition: opacity var(--tf-dur-ui) var(--tf-ease-out), transform var(--tf-dur-ui) var(--tf-ease-pop);
   touch-action: none;
   max-width: calc(100vw - 28px);
 }
+.badge-word { color: var(--tf-ink-dim); white-space: nowrap; }
 /* the code is the one thing a parent must read: never let it wrap or shrink */
-#parent-badge #badge-code { white-space: nowrap; flex: none; }
-@media (max-width: 520px) {
+#parent-badge .code-wrap { flex: none; }
+@media (max-width: 560px) {
   #parent-badge .badge-word { display: none; }
 }
 @media (pointer: coarse) {
-  #parent-badge { opacity: 0.6; font-size: var(--tf-text-md); }
+  #parent-badge { opacity: 0.62; font-size: var(--tf-text-md); }
 }
 #parent-badge:hover,
 #parent-badge.is-near,
 #parent-badge.is-reveal,
-#parent-badge.is-holding { opacity: 1; transform: scale(1.06); }
-#parent-badge .badge-emoji { font-family: var(--tf-font-emoji); font-size: 1.25em; }
-#badge-code {
-  font-weight: 900;
-  font-size: 1.15em;
-  letter-spacing: 0.34em;
+#parent-badge.is-holding { opacity: 1; transform: scale(1.04); }
+#parent-badge .badge-emoji { font-family: var(--tf-font-emoji); font-size: 1.2em; line-height: 1; }
+
+/* 2FA-style code display: rounded cells sit exactly behind the monospace
+   digits, since both children share the same font metrics (1ch per glyph). */
+.code-wrap {
+  position: relative;
+  display: inline-block;
+  font-family: var(--tf-font-mono);
+  font-size: 1.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+/* cell pitch is derived from the monospace advance: with 0.5ch of tracking
+   every character occupies 1.5ch, so the digits land 3ch apart. */
+.code-cells {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 2.4ch);
+  column-gap: 0.6ch;
+  pointer-events: none;
+}
+.code-cells i {
+  display: block;
+  border-radius: 7px;
+  background: var(--tf-code-cell);
+  border: 1px solid var(--tf-hairline);
+}
+#badge-code,
+#keypad-code {
+  position: relative;
+  display: block;
+  padding: 0.46em 0.2ch 0.46em 0.7ch;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: 0.5ch;
   color: var(--tf-accent);
   font-variant-numeric: tabular-nums;
-  padding-left: 0.15em;
+  text-align: left;
 }
-.badge-ring { width: 26px; height: 26px; flex: none; transform: rotate(-90deg); }
+.badge-ring { width: 24px; height: 24px; flex: none; transform: rotate(-90deg); }
 .badge-ring circle { fill: none; stroke-width: 4; stroke-linecap: round; }
-.badge-ring-track { stroke: rgba(255, 255, 255, 0.18); }
+.badge-ring-track { stroke: rgba(255, 255, 255, 0.16); }
 .badge-ring-fill {
   stroke: var(--tf-accent);
   stroke-dasharray: 107;
@@ -445,89 +699,129 @@ body[data-state="playing"] #parent-badge { cursor: pointer; }
 .btn {
   appearance: none;
   -webkit-appearance: none;
+  position: relative;
   font-family: inherit;
-  font-size: var(--tf-text-md);
-  font-weight: 800;
+  font-size: var(--tf-text-sm);
+  font-weight: 700;
+  letter-spacing: 0.01em;
   color: var(--tf-ink);
-  background: var(--tf-panel-2);
-  border: 1px solid var(--tf-line);
+  background: var(--tf-surface-2);
+  border: 1px solid var(--tf-hairline);
   border-radius: var(--tf-radius-pill);
-  padding: var(--tf-space-3) var(--tf-space-4);
+  padding: 11px var(--tf-space-4);
   cursor: pointer;
-  transition: transform var(--tf-dur-ui) var(--tf-ease-pop), background var(--tf-dur-ui) var(--tf-ease-out), opacity var(--tf-dur-ui);
+  box-shadow: var(--tf-inner-top);
+  transition: transform var(--tf-dur-ui) var(--tf-ease-pop),
+              background var(--tf-dur-ui) var(--tf-ease-out),
+              border-color var(--tf-dur-ui) var(--tf-ease-out),
+              box-shadow var(--tf-dur-ui) var(--tf-ease-out);
   touch-action: manipulation;
 }
-.btn:hover { background: rgba(255, 255, 255, 0.15); }
-.btn:active { transform: scale(0.96); }
-.btn:focus-visible { outline: none; box-shadow: var(--tf-ring); }
+.btn:hover {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: var(--tf-hairline-strong);
+  transform: translateY(-1px);
+}
+.btn:active { transform: translateY(0) scale(0.975); }
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--tf-scrim-solid), 0 0 0 4px var(--tf-accent);
+}
 .btn--primary {
-  background: linear-gradient(100deg, var(--tf-p2), var(--tf-p3));
-  color: #10061f;
+  background-image: linear-gradient(100deg, var(--tf-accent) 0%, var(--tf-grad-mid) 52%, var(--tf-accent-2) 100%);
+  background-color: var(--tf-accent);
+  color: var(--tf-on-accent);
   border-color: transparent;
   font-size: var(--tf-text-lg);
-  font-weight: 900;
-  padding: var(--tf-space-4) var(--tf-space-5);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  padding: 16px var(--tf-space-5);
   width: 100%;
-  margin-top: var(--tf-space-4);
+  margin-top: var(--tf-space-5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 14px 34px -14px rgba(0, 0, 0, 0.9);
 }
+.btn--primary:hover {
+  background-image: linear-gradient(100deg, var(--tf-accent) 0%, var(--tf-grad-mid) 52%, var(--tf-accent-2) 100%);
+  transform: translateY(-2px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 20px 44px -14px rgba(0, 0, 0, 0.95);
+}
+.btn--primary:active { transform: translateY(0) scale(0.985); }
 .btn--ghost { background: transparent; }
+.btn--ghost:hover { background: rgba(255, 255, 255, 0.08); }
 .btn[aria-pressed="true"] {
-  background: linear-gradient(100deg, var(--tf-p1), var(--tf-p2));
-  color: #10061f;
+  background-image: linear-gradient(100deg, var(--tf-accent), var(--tf-accent-2));
+  background-color: var(--tf-accent);
+  color: var(--tf-on-accent);
   border-color: transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
+.btn[aria-pressed="true"]:hover { border-color: transparent; }
 .btn-row {
   display: flex;
   flex-wrap: wrap;
   gap: var(--tf-space-3);
-  margin-top: var(--tf-space-4);
+  margin-top: var(--tf-space-5);
 }
 .btn-row .btn { flex: 1 1 180px; }
-.toggle-row { display: flex; flex-wrap: wrap; gap: var(--tf-space-2); }
-.toggle-row .btn { flex: 1 1 auto; font-size: var(--tf-text-sm); padding: var(--tf-space-2) var(--tf-space-3); }
+.toggle-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--tf-space-2);
+}
+.toggle-row .btn { padding: 10px var(--tf-space-3); }
+#theme-picker { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 560px) {
+  .toggle-row, #theme-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .toggle-row > .btn:nth-child(3):last-child { grid-column: 1 / -1; }
+}
 
 /* keypad */
 #keypad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--tf-space-2);
-  max-width: 320px;
-  margin: var(--tf-space-3) auto 0;
+  gap: var(--tf-space-3);
+  max-width: 300px;
+  margin: var(--tf-space-4) auto 0;
 }
 #keypad .key {
-  font-size: var(--tf-text-lg);
-  font-weight: 900;
-  padding: var(--tf-space-3);
-  border-radius: var(--tf-radius);
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  width: 100%;
+  border-radius: 50%;
+  font-size: var(--tf-text-xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+  background: var(--tf-surface-2);
+  backdrop-filter: var(--tf-blur-sm);
+  -webkit-backdrop-filter: var(--tf-blur-sm);
 }
+#keypad .key:active { transform: scale(0.93); background: rgba(255, 255, 255, 0.16); }
 #keypad .key--zero { grid-column: 2 / 3; }
 .gate-dots {
   display: flex;
   justify-content: center;
   gap: var(--tf-space-2);
-  margin-top: var(--tf-space-3);
+  margin-top: var(--tf-space-4);
 }
 .gate-dots i {
-  width: 16px;
-  height: 16px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid var(--tf-line);
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--tf-hairline);
   transition: background var(--tf-dur-ui) var(--tf-ease-out), transform var(--tf-dur-ui) var(--tf-ease-pop);
 }
-.gate-dots i.on { background: var(--tf-accent); transform: scale(1.2); }
+.gate-dots i.on { background: var(--tf-accent); border-color: transparent; transform: scale(1.35); }
 .code-echo {
-  text-align: center;
-  font-size: var(--tf-text-lg);
-  font-weight: 900;
-  letter-spacing: 0.42em;
-  color: var(--tf-accent);
-  font-variant-numeric: tabular-nums;
-  margin-top: var(--tf-space-2);
+  display: flex;
+  justify-content: center;
+  margin-top: var(--tf-space-3);
+  font-size: clamp(20px, 2.8vmin, 26px);
 }
+.code-echo .code-cells i { border-radius: 10px; }
 .center { text-align: center; }
-.muted { opacity: 0.65; font-size: var(--tf-text-sm); }
+.muted { color: var(--tf-ink-dim); font-size: var(--tf-text-sm); line-height: 1.6; }
 
 /* ---------- 8. State-driven visibility ---------- */
 body[data-state="idle"]           #start        { display: flex; }
@@ -549,10 +843,14 @@ body[data-gate="open"]:not([data-state="unlocked"]) #unlock .panel-gate { displa
    ambient drift; these rules calm the shell chrome to match.       */
 body[data-reduced="1"] .brand-mark,
 body[data-reduced="1"] #relock .relock-mark,
-body[data-reduced="1"] #relock .relock-hint { animation: none; }
-body[data-reduced="1"] .panel { animation: none; }
+body[data-reduced="1"] #relock .relock-hint,
+body[data-reduced="1"] .panel,
+body[data-reduced="1"] .relock-card,
+body[data-reduced="1"]::before { animation: none; }
 @media (prefers-reduced-motion: reduce) {
-  .panel, .brand-mark, #relock .relock-mark, #relock .relock-hint { animation: none; }
+  .panel, .relock-card, .brand-mark, #relock .relock-mark, #relock .relock-hint { animation: none; }
+  body::before { animation: none; }
+  .btn:hover, .btn--primary:hover { transform: none; }
 }
 </style>
 </head>
@@ -567,9 +865,11 @@ body[data-reduced="1"] .panel { animation: none; }
 
 <!-- heads-up display -->
 <div id="hud" aria-hidden="true">
-  <div id="hud-count"><span id="hud-total">0</span><span class="hud-label">keys smashed</span></div>
-  <div id="combo-meter"><div id="combo-fill"></div></div>
-  <div id="combo-label">combo <span id="combo-value">0</span></div>
+  <div class="hud-chip" id="hud-count"><span id="hud-total">0</span><span class="hud-label">keys smashed</span></div>
+  <div class="hud-chip hud-chip--combo">
+    <span id="combo-label">combo <i id="combo-value">0</i></span>
+    <div id="combo-meter"><div id="combo-fill"></div></div>
+  </div>
 </div>
 
 <!-- start screen -->
@@ -578,12 +878,13 @@ body[data-reduced="1"] .panel { animation: none; }
     <div class="brand">
       <div class="brand-mark">🐣</div>
       <div>
-        <h1>TinyFingers Deluxe</h1>
-        <div class="tagline">A safe keyboard playground for very small humans.</div>
+        <div class="eyebrow">Offline &middot; one file &middot; no accounts</div>
+        <h1 class="logo">KeySplash</h1>
       </div>
     </div>
+    <div class="tagline">A safe keyboard playground for very small humans.</div>
 
-    <p>Hand the keyboard over. Every key makes a colour, a shape and a friendly note. Nothing gets deleted, nothing gets sent anywhere, and your little one cannot wander off into the rest of the computer.</p>
+    <p class="lede">Hand the keyboard over. Every key makes a colour, a shape and a friendly note. Nothing gets deleted, nothing gets sent anywhere, and your little one cannot wander off into the rest of the computer.</p>
 
     <div class="section">
       <div class="section-title">Before you start</div>
@@ -598,16 +899,18 @@ body[data-reduced="1"] .panel { animation: none; }
     </div>
 
     <button id="start-btn" class="btn btn--primary" type="button">Start playing 🔒</button>
-    <p class="muted center" style="margin-top:14px">Works offline. No accounts, no uploads, no ads.</p>
+    <p class="foot-note">Works offline &middot; no uploads &middot; no ads</p>
   </div>
 </section>
 
 <!-- auto-relock overlay -->
 <section id="relock" class="overlay" aria-label="Locked - press any key to continue">
-  <div class="relock-mark">🔒</div>
-  <p class="relock-title">Keep smashing to play!</p>
-  <p class="relock-hint">Press any key or tap the screen 👆</p>
-  <p class="relock-parent">Parents: after it re-locks, type the code in the corner to unlock.</p>
+  <div class="relock-card">
+    <div class="relock-mark">🔒</div>
+    <p class="relock-title">Keep smashing to play!</p>
+    <p class="relock-hint">Press any key or tap the screen 👆</p>
+    <p class="relock-parent">Parents: after it re-locks, type the code in the corner to unlock.</p>
+  </div>
 </section>
 
 <!-- parent badge -->
@@ -618,7 +921,7 @@ body[data-reduced="1"] .panel { animation: none; }
   </svg>
   <span class="badge-emoji">👨‍👩‍👧</span>
   <span class="badge-word">Parents: type</span>
-  <span id="badge-code">0 0 0 0</span>
+  <span class="code-wrap"><span class="code-cells" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span id="badge-code">0 0 0 0</span></span>
   <span class="badge-word">to unlock</span>
 </div>
 
@@ -630,7 +933,7 @@ body[data-reduced="1"] .panel { animation: none; }
     <div class="panel-gate">
       <h2 class="center">Parent unlock 🔑</h2>
       <p class="center muted">Tap these four digits:</p>
-      <div class="code-echo" id="keypad-code">0 0 0 0</div>
+      <div class="code-echo"><span class="code-wrap"><span class="code-cells" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span id="keypad-code">0 0 0 0</span></span></div>
       <div class="gate-dots" id="gate-dots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
       <div id="keypad">
         <button class="btn key" type="button" data-digit="1">1</button>
@@ -657,12 +960,9 @@ body[data-reduced="1"] .panel { animation: none; }
         <div class="stat"><div class="stat-value" id="rep-minutes">0</div><div class="stat-label">minutes played</div></div>
         <div class="stat"><div class="stat-value" id="rep-unique">0</div><div class="stat-label">different keys</div></div>
         <div class="stat"><div class="stat-value" id="rep-combo">0</div><div class="stat-label">best combo</div></div>
+        <div class="stat stat--wide"><div class="stat-value" id="rep-fav">&mdash;</div><div class="stat-label">favourite keys</div></div>
       </div>
-      <div class="stat" style="margin-top:14px">
-        <div class="stat-value" id="rep-fav">&mdash;</div>
-        <div class="stat-label">favourite keys</div>
-      </div>
-      <div class="chaos">Chaos level: <span id="rep-chaos">Gentle Tapper 🐣</span></div>
+      <div class="chaos"><span class="chaos-label">Chaos level</span> <span id="rep-chaos">Gentle Tapper 🐣</span></div>
 
       <div class="section">
         <div class="section-title">Settings</div>
@@ -683,7 +983,7 @@ body[data-reduced="1"] .panel { animation: none; }
         <button id="resume-btn" class="btn btn--primary" style="margin-top:0" type="button">Resume play 🔒</button>
         <button id="exit-btn" class="btn btn--ghost" type="button">Exit to start</button>
       </div>
-      <p class="muted center" style="margin-top:12px">The screen stays locked while you read this, so the keyboard is still safe.</p>
+      <p class="muted center" style="margin-top:14px">The screen stays locked while you read this, so the keyboard is still safe.</p>
     </div>
 
   </div>
@@ -691,7 +991,7 @@ body[data-reduced="1"] .panel { animation: none; }
 
 <script>
 /* ============================================================
-   TinyFingers Deluxe - one script tag, three modules in load
+   KeySplash - one script tag, three modules in load
    order: TF.audio, TF.engine, then the shell that wires them
    together. window.TF is the only global this file creates.
    ============================================================ */
@@ -2111,7 +2411,7 @@ var TF = window.TF = window.TF || {};
 }());
 
 /* ============================================================
-   TinyFingers Deluxe - shell
+   KeySplash - shell
    Lock system, state machine, input capture, parent gate,
    settings, stats, and wiring to TF.audio / TF.engine.
    ============================================================ */
