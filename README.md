@@ -28,7 +28,7 @@ Existing keyboard-smash sites can't stop a baby from pressing the Windows key, F
 - **Numbers** show the digit plus that many little emoji (3 → 🐟🐟🐟).
 - **Space/Enter** fire full-screen confetti; other keys pop themed emoji.
 - Every key plays a note on a **pentatonic scale** (same key → same note), so smashing always sounds musical — all synthesized live with WebAudio, zero audio files.
-- **4 themes** (Space, Ocean, Garden, Candy), ambient drifting backgrounds, mouse sparkle trails, a combo meter with celebration milestones, and a keys-smashed counter.
+- **6 themes** (Space, Ocean, Garden, Candy, Rescue, Builder), ambient drifting backgrounds, mouse sparkle trails, a combo meter with celebration milestones, and a keys-smashed counter.
 - On unlock, parents get a **Smash Report**: total presses, minutes played, favorite keys, max combo, and a chaos-level title — plus settings (sound, voice, theme, reduced motion).
 
 ## Hosting (optional)

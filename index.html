@@ -152,6 +152,46 @@ body[data-theme="candy"] {
   --tf-scrim: rgba(14, 5, 11, 0.68);
   --tf-scrim-solid: #130610;
 }
+body[data-theme="rescue"] {
+  --tf-bg-a: #050a14; --tf-bg-b: #0a1526; --tf-bg-c: #122038;
+  --tf-au-1: rgba(59, 130, 246, 0.48);
+  --tf-au-2: rgba(239, 68, 68, 0.40);
+  --tf-au-3: rgba(251, 191, 36, 0.22);
+  --tf-au-4: rgba(125, 227, 255, 0.18);
+  --tf-p1: #FF7B7B; --tf-p2: #6FB4FF; --tf-p3: #FFD166; --tf-p4: #7DE3FF;
+  --tf-p5: #FFA3A3; --tf-p6: #9CC7FF; --tf-p7: #FFB86B; --tf-p8: #FFFFFF;
+  --tf-accent: #6fb4ff;
+  --tf-grad-mid: #FF7B7B;
+  --tf-accent-2: #ffd166;
+  --tf-ink: #eef5ff;
+  --tf-ink-dim: #a7b8d1;
+  --tf-on-accent: #06101f;
+  --tf-panel-solid: #0d1a2e;
+  --tf-panel-glass: rgba(15, 32, 55, 0.62);
+  --tf-line: rgba(111, 180, 255, 0.20);
+  --tf-scrim: rgba(4, 9, 17, 0.68);
+  --tf-scrim-solid: #050a14;
+}
+body[data-theme="builder"] {
+  --tf-bg-a: #100c05; --tf-bg-b: #221708; --tf-bg-c: #33240d;
+  --tf-au-1: rgba(245, 158, 11, 0.45);
+  --tf-au-2: rgba(249, 115, 22, 0.34);
+  --tf-au-3: rgba(250, 204, 21, 0.26);
+  --tf-au-4: rgba(56, 132, 255, 0.14);
+  --tf-p1: #FFD23F; --tf-p2: #FFB347; --tf-p3: #FF9264; --tf-p4: #8ECAFF;
+  --tf-p5: #FFE9A8; --tf-p6: #B8F26E; --tf-p7: #FF7B7B; --tf-p8: #FFFFFF;
+  --tf-accent: #ffcf5c;
+  --tf-grad-mid: #FF9C5B;
+  --tf-accent-2: #ffe08a;
+  --tf-ink: #fdf6e8;
+  --tf-ink-dim: #cbbc9e;
+  --tf-on-accent: #201503;
+  --tf-panel-solid: #201808;
+  --tf-panel-glass: rgba(42, 32, 13, 0.62);
+  --tf-line: rgba(255, 207, 92, 0.20);
+  --tf-scrim: rgba(12, 9, 4, 0.68);
+  --tf-scrim-solid: #100c05;
+}
 
 /* Surface tokens resolve on <body> so the per-theme values above are in scope.
    Default to opaque fallbacks; upgrade to glass only where blur is supported. */
@@ -769,7 +809,7 @@ body[data-gate="open"]:not([data-state="unlocked"]) #unlock > .panel { width: mi
   gap: var(--tf-space-2);
 }
 .toggle-row .btn { padding: 10px var(--tf-space-3); }
-#theme-picker { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+#theme-picker { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 560px) {
   .toggle-row, #theme-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .toggle-row > .btn:nth-child(3):last-child { grid-column: 1 / -1; }
@@ -976,6 +1016,8 @@ body[data-reduced="1"]::before { animation: none; }
           <button class="btn" type="button" data-theme="ocean" aria-pressed="false">🐟 Ocean</button>
           <button class="btn" type="button" data-theme="garden" aria-pressed="false">🌻 Garden</button>
           <button class="btn" type="button" data-theme="candy" aria-pressed="false">🍭 Candy</button>
+          <button class="btn" type="button" data-theme="rescue" aria-pressed="false">🚒 Rescue</button>
+          <button class="btn" type="button" data-theme="builder" aria-pressed="false">🚜 Builder</button>
         </div>
       </div>
 
@@ -1613,6 +1655,22 @@ var TF = window.TF = window.TF || {};
       count: ['🍬', '🍭', '🍩', '🧁', '🍪', '🍓', '🍫', '🍦', '🍡'],
       ambient: ['🍬', '🍭', '🧁', '🍩', '🍪', '🍓'],
       drift: 'down'
+    },
+    rescue: {
+      palette: ['#FF7B7B', '#6FB4FF', '#FFD166', '#7DE3FF', '#FFA3A3',
+        '#9CC7FF', '#FFB86B', '#FFFFFF'],
+      emoji: ['🚒', '🚑', '🚓', '🚨', '🚁', '🚤', '⛑️', '🧯', '🦺', '🧑‍🚒'],
+      count: ['🚒', '🚑', '🚓', '🚨', '🚁', '🧯', '⛑️', '🦺', '🚤'],
+      ambient: ['🚨', '✨', '🚁', '💫', '🚨', '⭐'],
+      drift: 'across'
+    },
+    builder: {
+      palette: ['#FFD23F', '#FFB347', '#FF9264', '#8ECAFF', '#FFE9A8',
+        '#B8F26E', '#FF7B7B', '#FFFFFF'],
+      emoji: ['🚜', '🚛', '🚚', '🏗️', '🚧', '🔨', '🛠️', '🧱', '⚙️', '🦺'],
+      count: ['🧱', '🚧', '🔨', '🚜', '🚛', '⚙️', '🛠️', '🏗️', '🚚'],
+      ambient: ['🚧', '⚙️', '✨', '💨', '⚙️', '⭐'],
+      drift: 'across'
     }
   };
 
@@ -2457,7 +2515,7 @@ var TF = window.TF = window.TF || {};
   };
 
   /* ---------------- constants ---------------- */
-  var THEMES = ['space', 'ocean', 'garden', 'candy'];
+  var THEMES = ['space', 'ocean', 'garden', 'candy', 'rescue', 'builder'];
   var STORAGE_KEY = 'tf-settings';
   var COMBO_WINDOW_MS = 5000;
   /* the top rung has to stay reachable inside one 5s window, or the combo
