@@ -1058,9 +1058,11 @@ var TF = window.TF = window.TF || {};
     return !s || s.sound !== false;
   }
 
+  /* Voice is independent of Sound: voice-only (letters spoken, no synth)
+     and synth-only are both valid configurations. */
   function speechOn() {
     var s = settings();
-    return (!s || s.speech !== false) && soundOn();
+    return !s || s.speech !== false;
   }
 
   /* ---- Graph ------------------------------------------------------------ */
